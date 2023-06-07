@@ -1,0 +1,27 @@
+public enum Construct
+{
+    NONE,
+    EQUALS,
+    PLUS,
+    MINUS,
+    MULTIPLIER,
+    DIVISOR,
+    IF,
+    ELIF,
+    ELSE,
+    FOR,
+    WHILE,
+    BREAK,
+    CONTINUE,
+    DEF,
+    RETURN,
+    AND,
+    OR,
+    NOT,
+    EQQ,
+    NEQ,
+    LESS,
+    MORE,
+    LEQ,
+    MEQ
+}
