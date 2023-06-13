@@ -30,17 +30,17 @@ def main():
 def filter_classifiers(classifier: ShapeClassifier, rejecter: ShapeClassifier):    
     non_keywords = []
     keywords = []
-    for i in range(len(rejecter.predictions)):
-        if rejecter.predictions[i].is_keyword:
-            keywords.append(rejecter.predictions[i])
+    for p in range(len(rejecter.predictions)):
+        if rejecter.predictions[p].is_keyword:
+            keywords.append(rejecter.predictions[p])
         else:
-            non_keywords.append(classifier.predictions[i])
+            non_keywords.append(classifier.predictions[p])
                 
-    for i in non_keywords:
-        classifier.predictions.remove(i)
+    for p in non_keywords:
+        classifier.predictions.remove(p)
 
-    for i in keywords:
-        rejecter.predictions.remove(i)
+    for p in keywords:
+        rejecter.predictions.remove(p)
     
     
 def get_config() -> dict[str, str]:
