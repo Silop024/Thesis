@@ -1,5 +1,5 @@
 # Set up
-cd your-path\Thesis
+cd your-path/Thesis
 
 python3 -m venv env
 

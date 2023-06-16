@@ -11,10 +11,10 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 
 # Directory where the trained model will be stored
-model_dir = config.get('PATHS', 'model_path')
+model_dir = config.get('Paths', 'model_path')
 
 # Directory where the training images are stored
-image_dir = config.get('PATHS', 'training_path')
+image_dir = config.get('Paths', 'training_path')
 
 # Get a list of all the image files in the directory
 image_files = os.listdir(image_dir)

@@ -1,11 +1,9 @@
-import os
 import joblib
 import cv2
-import configparser
 import numpy as np
-import preprocessing
+from preprocessing import read_image_and_scale
 from processing import read_image_and_process
-from prediction import ShapePrediction
+from shapes import ShapePrediction
 
 class ShapeClassifier:
     def __init__(self, model_path: str):
@@ -53,7 +51,7 @@ class ShapeClassifier:
         if len(self.predictions) < 1:
             return
         
-        image = preprocessing.read_image_and_scale(image_path)
+        image = read_image_and_scale(image_path)
         
         for prediction in self.predictions:
             cv2.putText(image, prediction.__repr__(), prediction.position, cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4, color=(0, 0, 255), thickness=1)

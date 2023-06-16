@@ -1,6 +1,26 @@
 import cv2
 from dataclasses import dataclass
+from enum import Enum
 import preprocessing
+import configparser
+
+class Shape(Enum):
+    NONE = ""
+    OneByOne = "1x1"
+    OneByTwo = "1x2"
+    OneByThree = "1x3"
+    OnyByFour = "1x4"
+    TwoByTwo = "2x2"
+    TwoByThree = "2x3"
+    TwoByFour = "2x4"
+    SmallCircle = "SmallCircle"
+    
+    def to_keyword(self) -> str:
+        return shape_mapping[self]
+    
+    def is_keyword(self) -> bool:
+        return self != Shape.NONE
+    
 
 @dataclass
 class ShapePrediction:
@@ -21,10 +41,17 @@ class ShapePrediction:
     """
     index: int
     position: tuple
-    is_keyword: bool
-    keyword: str
+    shape: Shape
     id: int
     image_path: str
+    
+    @property
+    def is_keyword(self) -> bool:
+        return self.shape.is_keyword()
+
+    @property
+    def keyword(self) -> str:
+        return self.shape.to_keyword() if self.is_keyword else ""
     
     def show(self):
         image = preprocessing.read_image_and_scale(self.image_path)
@@ -36,7 +63,7 @@ class ShapePrediction:
 
     def __str__(self) -> str:
         string = f'index: {self.index}\nposition: {self.position}\n'
-        if self.is_keyword:
+        if self.shape.is_keyword():
             string += f'keyword: {self.keyword}\n'
         else:
             string += f'id: {self.id}\n'
@@ -57,3 +84,9 @@ class ShapePrediction:
             return False
         
         return self.index == other.index and self.image_path == other.image_path
+
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+shape_mapping_dict = config['Shapes']
+shape_mapping = {Shape(k): v for k, v in shape_mapping_dict.items()}
