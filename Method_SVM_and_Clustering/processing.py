@@ -1,9 +1,10 @@
 import cv2
 import numpy as np
 from preprocessing import read_image_and_preprocess
+from sklearn.cluster import DBSCAN
     
      
-def read_image_and_process(image_path: str, debug: bool) -> dict[str, list]:
+def read_image_and_process(image_path: str, debug: bool = False) -> dict:
     """
     Reads, processes an image and computes Hu moments and centroids of contours.
     
@@ -38,8 +39,10 @@ def read_image_and_process(image_path: str, debug: bool) -> dict[str, list]:
 
         huMoments = get_hu_moment(M)
         result.append(huMoments)
+    
+    X = np.array([huMoment.flatten() for huMoment in result])
         
-    return {'humoments': result, 'centroids': centroids}
+    return {'humoments': X, 'centroids': centroids}
 
 def get_contours(segments: np.ndarray, min_area: float, max_area: float) -> list:
     """Returns the contours found in a segmented image.
@@ -78,6 +81,15 @@ def get_hu_moment(moments) -> list:
     huMoments = -1 * np.sign(huMoments) * np.log10(np.abs(huMoments))
 
     return huMoments
+
+
+def cluster_analysis(image_path: str, clusterer: DBSCAN):
+    processed_image = read_image_and_process(image_path)
+    
+    ids = clusterer.fit_predict(processed_image['humoments'])
+    
+    return ids
+    
 
             
 def debug_contours(image: np.ndarray, contours):

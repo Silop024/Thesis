@@ -1,30 +1,47 @@
 import os
 import configparser
+from processing import cluster_analysis
 from humoments_svm_classifier import ShapeClassifier
+from sklearn.cluster import DBSCAN
+from shapes import Shape
 
 def main():
     # Initialize
-    config = get_config()
+    dirs = get_directories()
     
-    rejecter_path = f"{config['model_dir']}humoments_one_svm_model.pkl"
-    classifier_path = f"{config['model_dir']}humoments_multi_svm_model.pkl"
+    rejecter_path = f"{dirs['model_dir']}humoments_one_svm_model.pkl"
+    classifier_path = f"{dirs['model_dir']}humoments_multi_svm_model.pkl"
     
     rejecter = ShapeClassifier(model_path=rejecter_path)
     classifier = ShapeClassifier(model_path=classifier_path)
+    clusterer = DBSCAN(eps=0.2, min_samples=2)
     
     # Get a list of all the image files in the directory
-    image_files = os.listdir(config['image_dir'])
+    image_files = os.listdir(dirs['image_dir'])
     
     # Classify shapes in each image
     for image_file in image_files:
-        image_path = f"{config['image_dir']}{image_file}"
+        image_path = f"{dirs['image_dir']}{image_file}"
+        
         rejecter.classifyShapes(image_path)
         classifier.classifyShapes(image_path)
         
-        filter_classifiers(classifier=classifier, rejecter=rejecter)
+        #classifier.showPredictions()
+        
+        #filter_classifiers(classifier=classifier, rejecter=rejecter)
+        
+        cluster_ids = cluster_analysis(image_path, clusterer)
+        
+        print(cluster_ids)
+        
+        for i, shape in enumerate(rejecter.predictions):
+            if shape.is_keyword:
+                continue
+            classifier.predictions[i].id = cluster_ids[i]
+            classifier.predictions[i].shape = Shape.Undefined
             
-        classifier.showPredictions(image_path)
-        rejecter.showPredictions(image_path)
+        classifier.showPredictions()
+        #rejecter.showPredictions()
     
     
 def filter_classifiers(classifier: ShapeClassifier, rejecter: ShapeClassifier):    
@@ -43,7 +60,7 @@ def filter_classifiers(classifier: ShapeClassifier, rejecter: ShapeClassifier):
         rejecter.predictions.remove(p)
     
     
-def get_config() -> dict[str, str]:
+def get_directories() -> dict[str, str]:
     # Get config parser
     config = configparser.ConfigParser()
     config.read('config.ini')

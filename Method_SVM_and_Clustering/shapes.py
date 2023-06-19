@@ -5,7 +5,8 @@ import preprocessing
 import configparser
 
 class Shape(Enum):
-    NONE = ""
+    Undefined = "-1" # One-class svm classifier marks it as a shape it has not seen before.
+    Unknown = "1"    # Multi-class svm classifier marks it as a shape that it has seen before.
     OneByOne = "1x1"
     OneByTwo = "1x2"
     OneByThree = "1x3"
@@ -14,12 +15,19 @@ class Shape(Enum):
     TwoByThree = "2x3"
     TwoByFour = "2x4"
     SmallCircle = "SmallCircle"
+    # Temprary below:
+    Rectangle = "rectangle"
+    Circle = "circle"
+    Trappa = "trappa"
     
     def to_keyword(self) -> str:
-        return shape_mapping[self]
+        if self.is_keyword() and self != Shape.Unknown:
+            return shape_mapping[self]
+        else:
+            return ''
     
     def is_keyword(self) -> bool:
-        return self != Shape.NONE
+        return self != Shape.Undefined
     
 
 @dataclass
@@ -53,7 +61,7 @@ class ShapePrediction:
     def keyword(self) -> str:
         return self.shape.to_keyword() if self.is_keyword else ""
     
-    def show(self):
+    def show(self) -> None:
         image = preprocessing.read_image_and_scale(self.image_path)
         cv2.putText(image, self.__repr__(), self.position, cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4, color=(0, 0, 255), thickness=1)
         cv2.imshow('Predictions', image)
