@@ -14,11 +14,6 @@ class Shape(Enum):
     TwoByTwo = "2x2"
     TwoByThree = "2x3"
     TwoByFour = "2x4"
-    SmallCircle = "SmallCircle"
-    # Temprary below:
-    Rectangle = "rectangle"
-    Circle = "circle"
-    Trappa = "trappa"
     
     def to_keyword(self) -> str:
         if self.is_keyword() and self != Shape.Unknown:
@@ -28,6 +23,7 @@ class Shape(Enum):
     
     def is_keyword(self) -> bool:
         return self != Shape.Undefined
+    
     
 
 @dataclass
@@ -50,6 +46,7 @@ class ShapePrediction:
     index: int
     position: tuple
     shape: Shape
+    probability: float
     id: int
     image_path: str
     
@@ -72,19 +69,14 @@ class ShapePrediction:
     def __str__(self) -> str:
         string = f'index: {self.index}\nposition: {self.position}\n'
         if self.shape.is_keyword():
-            string += f'keyword: {self.keyword}\n'
+            string += f'keyword: {self.keyword}\nprobability: {self.probability}\n'
         else:
             string += f'id: {self.id}\n'
         return string
     
     
     def __repr__(self) -> str:
-        string = f'{self.index}: '
-        if self.is_keyword:
-            string += self.keyword
-        else:
-            string += str(self.id)
-        return string
+        return f'{self.index}: {self.shape.name}\n'
     
     
     def __eq__(self, other: object) -> bool:
