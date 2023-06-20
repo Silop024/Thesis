@@ -4,7 +4,7 @@ from preprocessing import read_image_and_preprocess
 from sklearn.cluster import DBSCAN
     
      
-def read_image_and_process(image_path: str, debug: bool = False) -> dict:
+def read_image_and_process(image_path: str, debug: bool = False) -> dict[str, np.ndarray | list]:
     """
     Reads, processes an image and computes Hu moments and centroids of contours.
     
@@ -21,15 +21,15 @@ def read_image_and_process(image_path: str, debug: bool = False) -> dict:
     _, thresh = cv2.threshold(processed_image, 64, 255, cv2.THRESH_BINARY)
 
     # Get contours, but avoid the contour around the entire image and non-shapes by defining min and max size.
-    min_contour_area = 50.0
+    min_contour_area = 20.0
     max_contour_area = 0.9 * processed_image.shape[0] * processed_image.shape[1]
     contours = get_contours(thresh, min_contour_area, max_contour_area)
 
     if debug:
         debug_contours(processed_image, contours)
         
-    result = []
-    centroids = []
+    hu_moments_list: list[np.ndarray] = []
+    centroids: list[tuple] = []
     for contour in contours:
         # Calculate the moments of the contour
         M = cv2.moments(contour)
@@ -37,10 +37,11 @@ def read_image_and_process(image_path: str, debug: bool = False) -> dict:
         centroid = get_centroid(M)
         centroids.append(centroid)
 
-        huMoments = get_hu_moment(M)
-        result.append(huMoments)
+        huMoments = get_hu_moments(M)
+        hu_moments_list.append(huMoments)
     
-    X = np.array([huMoment.flatten() for huMoment in result])
+    X = np.array([huMoments.flatten() for huMoments in hu_moments_list])
+    #X = np.array(hu_moments_list)
         
     return {'humoments': X, 'centroids': centroids}
 
@@ -70,14 +71,12 @@ def get_centroid(moments) -> tuple:
         return (0, 0)
 
 
-def get_hu_moment(moments) -> list:
+def get_hu_moments(moments) -> np.ndarray:
     # Calculate Hu Moments
-    huMoments = cv2.HuMoments(moments)
+    huMoments: np.ndarray = cv2.HuMoments(moments)
 
-    # Avoid zero value
+    # Convert Hu Moments to log scale, avoid 0 values to avoid value errors
     huMoments = huMoments + 1e-10
-
-    # Log transform to make the values more understandable
     huMoments = -1 * np.sign(huMoments) * np.log10(np.abs(huMoments))
 
     return huMoments
