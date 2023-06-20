@@ -2,17 +2,18 @@ import joblib
 import cv2
 import numpy as np
 from sklearn.svm import SVC
+from sklearn.calibration import CalibratedClassifierCV
 from preprocessing import read_image_and_scale
 from processing import read_image_and_process
 from shapes import ShapePrediction, Shape
 
 class ShapeClassifier:
-    clf: SVC
+    calibrated_clf: CalibratedClassifierCV
     predictions: list[ShapePrediction]
     source: str
     
     def __init__(self, model_path: str):
-        self.clf = joblib.load(model_path)
+        self.calibrated_clf = joblib.load(model_path)
         self.predictions = []
         self.source = ''
 
@@ -33,15 +34,32 @@ class ShapeClassifier:
         self.predictions = []
         self.source = image_path
         
-        classifications = self.clf.predict(processed_image['humoments'])
+        #classifications = self.clf.predict(processed_image['humoments'])
+        
+        # Use the calibrated classifier to predict probabilities
+        probabilities = self.calibrated_clf.predict_proba(processed_image['humoments'])
+        
+        print(self.calibrated_clf.classes_)
+        print(probabilities)
+        
+        # Get the classifications by selecting the class with the highest probability
+        max_probabilities = probabilities.max(axis=1)
+        classifications = probabilities.argmax(axis=1)
         
         # Only useful for the one class classifier that acts as a rejecter.
         for i, centroid in enumerate(processed_image['centroids']):
+            shape_name = self.calibrated_clf.classes_[classifications[i]]
+            if max_probabilities[i] < 0.5:
+                shape = Shape.Undefined
+            else:
+                shape = Shape(str(shape_name))
+                
             self.predictions.append(
                 ShapePrediction(
                     index = i, 
                     position = centroid, 
-                    shape = Shape(str(classifications[i])),
+                    shape = shape,
+                    probability = max_probabilities[i],
                     id = 0, 
                     image_path = image_path
                 )
