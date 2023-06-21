@@ -1,9 +1,7 @@
 import os
 import configparser
-from processing import cluster_analysis
-from humoments_svm_classifier import ShapeClassifier
+from humoments_classifier import ShapeClassifier
 from sklearn.cluster import DBSCAN
-from shapes import Shape
 
 def main():
     # Initialize

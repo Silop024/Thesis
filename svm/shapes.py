@@ -1,7 +1,5 @@
-import cv2
 from dataclasses import dataclass
 from enum import Enum
-import preprocessing
 import configparser
 
 class Shape(Enum):
@@ -57,13 +55,6 @@ class ShapePrediction:
     @property
     def keyword(self) -> str:
         return self.shape.to_keyword() if self.is_keyword else ""
-    
-    def show(self) -> None:
-        image = preprocessing.read_image_and_scale(self.image_path)
-        cv2.putText(image, self.__repr__(), self.position, cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4, color=(0, 0, 255), thickness=1)
-        cv2.imshow('Predictions', image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
         
 
     def __str__(self) -> str:

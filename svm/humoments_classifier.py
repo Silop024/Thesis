@@ -3,9 +3,10 @@ import cv2
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.calibration import CalibratedClassifierCV
-from preprocessing import read_image_and_scale
-from processing import read_image_and_process
-from shapes import ShapePrediction, Shape
+from sklearn.decomposition import PCA
+from shared.preprocessing import read_image_and_scale
+from .processing import read_image_and_process
+from .shapes import ShapePrediction, Shape
 
 class ShapeClassifier:
     calibrated_clf: CalibratedClassifierCV
@@ -37,33 +38,52 @@ class ShapeClassifier:
         #classifications = self.clf.predict(processed_image['humoments'])
         
         # Use the calibrated classifier to predict probabilities
-        probabilities = self.calibrated_clf.predict_proba(processed_image['humoments'])
+        hu_moments = processed_image['humoments']
+        #pca = PCA(n_components=3)
+        #pca.fit(hu_moments)
+        X = hu_moments[:, :3]
         
-        print(self.calibrated_clf.classes_)
-        print(probabilities)
         
-        # Get the classifications by selecting the class with the highest probability
-        max_probabilities = probabilities.max(axis=1)
-        classifications = probabilities.argmax(axis=1)
         
-        # Only useful for the one class classifier that acts as a rejecter.
-        for i, centroid in enumerate(processed_image['centroids']):
-            shape_name = self.calibrated_clf.classes_[classifications[i]]
-            if max_probabilities[i] < 0.5:
-                shape = Shape.Undefined
-            else:
-                shape = Shape(str(shape_name))
+        try:
+            probabilities = self.calibrated_clf.predict_proba(X)
+        
+            # Get the classifications by selecting the class with the highest probability
+            max_probabilities = probabilities.max(axis=1)
+            classifications = probabilities.argmax(axis=1)
+        
+            # Only useful for the one class classifier that acts as a rejecter.
+            for i, centroid in enumerate(processed_image['centroids']):
+                shape_name = self.calibrated_clf.classes_[classifications[i]]
+                if max_probabilities[i] < 0.5:
+                    shape = Shape.Undefined
+                else:
+                    shape = Shape(str(shape_name))
                 
-            self.predictions.append(
-                ShapePrediction(
-                    index = i, 
-                    position = centroid, 
-                    shape = shape,
-                    probability = max_probabilities[i],
-                    id = 0, 
-                    image_path = image_path
+                self.predictions.append(
+                    ShapePrediction(
+                        index = i, 
+                        position = centroid, 
+                        shape = shape,
+                        probability = max_probabilities[i],
+                        id = 0, 
+                        image_path = image_path
+                    )
                 )
-            )
+        except:
+            idk = self.calibrated_clf.predict(X)
+            for i, centroid in enumerate(processed_image['centroids']):
+                self.predictions.append(
+                    ShapePrediction(
+                        index = i, 
+                        position = centroid, 
+                        shape = Shape(idk[i]),
+                        probability = 1,
+                        id = 0, 
+                        image_path = image_path
+                    )
+                )
+        
                 
         
     def showPredictions(self):

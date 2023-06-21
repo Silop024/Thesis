@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from preprocessing import read_image_and_preprocess
+from shared.preprocessing import read_image_and_preprocess
 from sklearn.cluster import DBSCAN
     
      

@@ -3,13 +3,17 @@ import cv2
 import joblib
 import configparser
 import numpy as np
+from collections import Counter
+
 from sklearn import svm, datasets
 from sklearn import preprocessing
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.model_selection import GridSearchCV
-from preprocessing import read_image_and_preprocess
-from collections import Counter
 from sklearn.preprocessing import LabelEncoder
+
+from shared.preprocessing import read_image_and_preprocess
+
+
 
 print('-------- Reading config file: Started --------')
 
