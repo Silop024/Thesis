@@ -70,21 +70,15 @@ class ShapePrediction:
         
 
     def __str__(self) -> str:
-        string = f'index: {self.index}\nposition: {self.position}\n'
-        if self.shape.is_keyword():
-            string += f'keyword: {self.keyword}\n'
-        else:
-            string += f'id: {self.id}\n'
-        return string
+        return f'index: {self.index}\nposition: {self.position}\nshape: {self.shape.name}\n'
     
     
     def __repr__(self) -> str:
-        string = f'{self.index}: '
+        string = f"{self.index}:"
         if self.is_keyword:
-            string += self.keyword
+            return string + self.keyword
         else:
-            string += str(self.id)
-        return string
+            return string + str(self.id)
     
     
     def __eq__(self, other: object) -> bool:

@@ -5,7 +5,11 @@ import numpy as np
 from sklearn import svm
 from sklearn import preprocessing
 from processing import read_image_and_process
+import shared.debugging as debugging
 
+
+loading = debugging.LoadingAnimation(message='Reading data from configs')
+loading.start()
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -18,6 +22,10 @@ image_dir = config.get('Paths', 'training_dir')
 
 # Get a list of all the image files in the directory
 image_files = os.listdir(image_dir)
+
+loading.stop()
+loading.set_message('Processing images')
+loading.start()
 
 # Prepare empty lists for the feature vectors and labels
 X = []  # feature vectors (Hu Moments)
@@ -37,6 +45,10 @@ for image_file in image_files:
         Y.append(shape_name)
         scaler = preprocessing.StandardScaler().fit(X)
 
+loading.stop()
+loading.set_message('Training classifiers')
+loading.start()
+
 X = np.array(X)
 # Create a SVM classifier and train it on the training data
 multi_clf = svm.SVC(C=10, kernel='poly', gamma=10) # poly and linear seem to be the most accurate
@@ -48,3 +60,5 @@ one_clf.fit(X)
 # Save model
 joblib.dump(multi_clf, f'{model_dir}humoments_multi_svm_model.pkl')
 joblib.dump(one_clf, f'{model_dir}humoments_one_svm_model.pkl')
+
+loading.stop()

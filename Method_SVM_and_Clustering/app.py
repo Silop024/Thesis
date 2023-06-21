@@ -26,7 +26,7 @@ def main():
         rejecter.classifyShapes(image_path)
         classifier.classifyShapes(image_path)
         
-        #classifier.showPredictions()
+        classifier.showPredictions()
         
         #filter_classifiers(classifier=classifier, rejecter=rejecter)
         
