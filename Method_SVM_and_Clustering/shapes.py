@@ -76,7 +76,7 @@ class ShapePrediction:
     
     
     def __repr__(self) -> str:
-        return f'{self.index}: {self.shape.name}\n'
+        return f'{self.index}: {self.shape.name}'
     
     
     def __eq__(self, other: object) -> bool:
