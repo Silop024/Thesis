@@ -21,7 +21,7 @@ def read_image_and_process(image_path: str, debug: bool = False) -> dict:
     _, thresh = cv2.threshold(processed_image, 64, 255, cv2.THRESH_BINARY)
 
     # Get contours, but avoid the contour around the entire image and non-shapes by defining min and max size.
-    min_contour_area = 50.0
+    min_contour_area = 20.0
     max_contour_area = 0.9 * processed_image.shape[0] * processed_image.shape[1]
     contours = get_contours(thresh, min_contour_area, max_contour_area)
 
