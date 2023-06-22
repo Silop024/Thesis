@@ -1,20 +1,26 @@
 import joblib
 import cv2
 import numpy as np
+
 from sklearn.svm import SVC
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.decomposition import PCA
+
+# My libraries
 from shared.preprocessing import read_image_and_scale
 from .processing import read_image_and_process
 from .shapes import ShapePrediction, Shape
+from shared.debugging import Debug
 
 class ShapeClassifier:
     calibrated_clf: CalibratedClassifierCV
+    pca: PCA
     predictions: list[ShapePrediction]
     source: str
     
-    def __init__(self, model_path: str):
+    def __init__(self, model_path: str, pca_path: str):
         self.calibrated_clf = joblib.load(model_path)
+        self.pca = joblib.load(pca_path)
         self.predictions = []
         self.source = ''
 
@@ -35,15 +41,13 @@ class ShapeClassifier:
         self.predictions = []
         self.source = image_path
         
-        #classifications = self.clf.predict(processed_image['humoments'])
+        hu_moments = processed_image['humoments']
+        X = self.pca.transform(hu_moments)
+        
+        
+        #classifications = self.clf.predict(X)
         
         # Use the calibrated classifier to predict probabilities
-        hu_moments = processed_image['humoments']
-        #pca = PCA(n_components=3)
-        #pca.fit(hu_moments)
-        X = hu_moments[:, :3]
-        
-        
         
         try:
             probabilities = self.calibrated_clf.predict_proba(X)
@@ -104,8 +108,9 @@ class ShapeClassifier:
         for prediction in self.predictions:
             cv2.putText(image, prediction.__repr__(), prediction.position, cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4, color=(0, 0, 255), thickness=1)
         
-        for prediction in self.predictions:
-            print(prediction)
+        if Debug.verbosity > 3:
+            for prediction in self.predictions:
+                print(prediction)
             
         cv2.imshow('Predictions', image)
         cv2.waitKey(0)
