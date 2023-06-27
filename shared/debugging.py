@@ -6,7 +6,7 @@ class Debug:
         Debug.verbosity = level
     
     @staticmethod  
-    def print(text: str, level: int, color: str = None):
+    def print(text: str, level: int = 0, color: str = None):
         if Debug.verbosity >= level:
             match color:
                 case 'red':
@@ -15,6 +15,8 @@ class Debug:
                     Debug.print_green(text)
                 case 'blue':
                     Debug.print_blue(text)
+                case _:
+                    print(text)
 
     @staticmethod
     def print_red(text: str):
