@@ -8,7 +8,7 @@ class Shape(Enum):
     OneByOne = "1x1"
     OneByTwo = "1x2"
     OneByThree = "1x3"
-    OnyByFour = "1x4"
+    OneByFour = "1x4"
     TwoByTwo = "2x2"
     TwoByThree = "2x3"
     TwoByFour = "2x4"
