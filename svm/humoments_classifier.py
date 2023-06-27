@@ -2,9 +2,8 @@ import joblib
 import cv2
 import numpy as np
 
-from sklearn.svm import SVC
-from sklearn.calibration import CalibratedClassifierCV
 from sklearn.decomposition import PCA
+from sklearn.base import BaseEstimator
 
 # My libraries
 from shared.preprocessing import read_image_and_scale
@@ -13,18 +12,18 @@ from .shapes import ShapePrediction, Shape
 from shared.debugging import Debug
 
 class ShapeClassifier:
-    calibrated_clf: CalibratedClassifierCV
-    pca: PCA
+    clf: BaseEstimator
+    pca: PCA | None
     predictions: list[ShapePrediction]
     source: str
     
-    def __init__(self, model_path: str, pca_path: str):
-        self.calibrated_clf = joblib.load(model_path)
-        self.pca = joblib.load(pca_path)
+    def __init__(self, model_path: str, pca_path: str | None):
+        self.clf = joblib.load(model_path)
+        self.pca = None if pca_path is None else joblib.load(pca_path)
         self.predictions = []
         self.source = ''
 
-    def classifyShapes(self, image_path: str, debug: bool = False):
+    def classifyShapes(self, image_path: str):
         """
         Classifies the shapes present in the given image.
         
@@ -37,19 +36,20 @@ class ShapeClassifier:
             image_path (str): The path to the image where shapes are to be classified.
             debug (bool, optional): If True, additional debug information will be displayed. Defaults to False.
         """        
-        processed_image = read_image_and_process(image_path, debug)
+        processed_image = read_image_and_process(image_path)
         self.predictions = []
         self.source = image_path
         
-        hu_moments = processed_image['humoments']
-        X = self.pca.transform(hu_moments)
+        X = processed_image['humoments']
         
+        if self.pca is not None:
+            X = self.pca.transform(X)
         
         #classifications = self.clf.predict(X)
         
         # Use the calibrated classifier to predict probabilities
         
-        try:
+        """try:
             probabilities = self.calibrated_clf.predict_proba(X)
         
             # Get the classifications by selecting the class with the highest probability
@@ -74,19 +74,19 @@ class ShapeClassifier:
                         image_path = image_path
                     )
                 )
-        except:
-            idk = self.calibrated_clf.predict(X)
-            for i, centroid in enumerate(processed_image['centroids']):
-                self.predictions.append(
-                    ShapePrediction(
-                        index = i, 
-                        position = centroid, 
-                        shape = Shape(idk[i]),
-                        probability = 1,
-                        id = 0, 
-                        image_path = image_path
-                    )
+        except:"""
+        predictions = self.clf.predict(X)
+        for i, centroid in enumerate(processed_image['centroids']):
+            self.predictions.append(
+                ShapePrediction(
+                    index = i, 
+                    position = centroid, 
+                    shape = Shape(predictions[i]),
+                    probability = 1,
+                    id = 0, 
+                    image_path = image_path
                 )
+            )
         
                 
         
