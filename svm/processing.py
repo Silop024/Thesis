@@ -1,12 +1,67 @@
+import os
 import cv2
 import numpy as np
-from shared.preprocessing import read_image_and_preprocess
+
+import matplotlib.pyplot as plt
+
+import mahotas.features as mahotas
+
+from shared.preprocessing import read_image_and_preprocess, scale_image
 from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.decomposition import PCA
+
+# For terminal output
+from tqdm import tqdm
+
+# My modules
+from shared.debugging import Debug
+    
+    
+def read_dir_and_process(dir_path: str) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Reads and process each image in the directory, computing Hu moments and centroids of its contours.
+
+    Args:
+        dir_path (str): the path to the directory of images to process
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: a tuple of `X` (data) and `Y` (labels)
+    """
+    image_files = os.listdir(dir_path)
+    # Prepare empty lists for the feature vectors and labels
+    X = []  # feature vectors (Hu Moments)
+    Y = []  # labels (shape names)
+    
+    if Debug.verbosity > 1:
+        image_files = tqdm(image_files, colour='green')
+
+    # Process each image file
+    for image_file in image_files:
+        hu_moments_array = read_image_and_process(os.path.join(dir_path, image_file))['humoments']
+        shape_name = image_file.split('_')[0]
+
+        # Put shape labels in Y and hu moments in X
+        for hu_moments in hu_moments_array:
+            X.append(hu_moments)
+            Y.append(shape_name)
+            
+    X = StandardScaler().fit_transform(X)
+    
+    # There was some bug that forced me to do this, still not sure why,
+    # converts the labels to integers, then back to the names
+    le = LabelEncoder()
+    Y = le.fit_transform(Y)
+    Y = le.inverse_transform(Y)
+    
+    #debug_processing_results(X, Y)
+            
+    return X, Y
     
      
-def read_image_and_process(image_path: str, debug: bool = False) -> dict[str, np.ndarray | list]:
+def read_image_and_process(image_path: str) -> dict[str, np.ndarray | list]:
     """
-    Reads, processes an image and computes Hu moments and centroids of contours.
+    Reads and processes an image and computes Hu moments and centroids of contours.
     
     Args:
         image_path (str): Path to the image file.
@@ -15,33 +70,53 @@ def read_image_and_process(image_path: str, debug: bool = False) -> dict[str, np
     Returns:
         dict: A dictionary with two keys: 'humoments' and 'centroids' each containing a list of corresponding values.
     """
-    processed_image = read_image_and_preprocess(image_path)
+    preprocessed_image = read_image_and_preprocess(image_path)
 
     # Use threshold for image segmentation.
-    _, thresh = cv2.threshold(processed_image, 64, 255, cv2.THRESH_BINARY)
+    _, thresh = cv2.threshold(preprocessed_image, 64, 255, cv2.THRESH_BINARY)
+    
+    #cv2.imshow('Thresholded', thresh)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
 
     # Get contours, but avoid the contour around the entire image and non-shapes by defining min and max size.
     min_contour_area = 20.0
-    max_contour_area = 0.9 * processed_image.shape[0] * processed_image.shape[1]
+    max_contour_area = 0.9 * preprocessed_image.shape[0] * preprocessed_image.shape[1]
     contours = get_contours(thresh, min_contour_area, max_contour_area)
+        
 
-    if debug:
-        debug_contours(processed_image, contours)
+    if Debug.verbosity > 3:
+        debug_contours(preprocessed_image, contours)
         
     hu_moments_list: list[np.ndarray] = []
     centroids: list[tuple] = []
     for contour in contours:
-        # Calculate the moments of the contour
-        M = cv2.moments(contour)
+        # Find bounding box coorinates
+        x, y, w, h = cv2.boundingRect(contour)
         
-        centroid = get_centroid(M)
+        # Extract region of interest (ROI) and resize it
+        roi = thresh[y:y+h, x:x+w]
+        resized_roi = scale_image(roi)
+        #_, roi_thresh = cv2.threshold(resized_roi, 64, 255, cv2.THRESH_BINARY)
+        min_contour_area = 20.0
+        max_contour_area = 0.9 * resized_roi.shape[0] * resized_roi.shape[1]
+        roi_contours = get_contours(resized_roi, 0, max_contour_area)
+        debug_contours(resized_roi, roi_contours)
+        
+        for roi_contour in roi_contours:
+            # Calculate the moments of the contour
+            M = cv2.moments(roi_contour)
+            # Save hu moments
+            hu_moments = get_hu_moments(M)
+            hu_moments_list.append(hu_moments)
+        
+        # Save centroid
+        M_contour = cv2.moments(contour)
+        centroid = get_centroid(M_contour)
         centroids.append(centroid)
 
-        huMoments = get_hu_moments(M)
-        hu_moments_list.append(huMoments)
     
     X = np.array([huMoments.flatten() for huMoments in hu_moments_list])
-    #X = np.array(hu_moments_list)
         
     return {'humoments': X, 'centroids': centroids}
 
@@ -73,13 +148,18 @@ def get_centroid(moments) -> tuple:
 
 def get_hu_moments(moments) -> np.ndarray:
     # Calculate Hu Moments
-    huMoments: np.ndarray = cv2.HuMoments(moments)
+    hu_moments: np.ndarray = cv2.HuMoments(moments)
 
     # Convert Hu Moments to log scale, avoid 0 values to avoid value errors
-    huMoments = huMoments + 1e-10
-    huMoments = -1 * np.sign(huMoments) * np.log10(np.abs(huMoments))
+    hu_moments = hu_moments + 1e-10
+    hu_moments = -1 * np.sign(hu_moments) * np.log10(np.abs(hu_moments))
 
-    return huMoments
+    return hu_moments
+
+
+def get_zernike_moments(roi, contour) -> np.ndarray:
+    zernike_moments = mahotas.zernike_moments(roi, cv2.minEnclosingCircle(contour), degree=8)
+    return zernike_moments
 
 
 def cluster_analysis(image_path: str, clusterer: DBSCAN):
@@ -88,13 +168,67 @@ def cluster_analysis(image_path: str, clusterer: DBSCAN):
     ids = clusterer.fit_predict(processed_image['humoments'])
     
     return ids
-    
 
-            
-def debug_contours(image: np.ndarray, contours):
+
+def debug_contours(image: np.ndarray, contours: np.ndarray):
     image_copy = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     image_contours = cv2.drawContours(image_copy, contours, -1, (0,255,0), 1)
     
     cv2.imshow('Contours', image_contours)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+
+
+def debug_processing_results(X, Y):
+    for i in range(0, 7):
+        pca = PCA(n_components=i)
+        X_pca = pca.fit_transform(X)
+        exp_var_pca = pca.explained_variance_ratio_
+        cum_sum_eigenvalues = np.cumsum(exp_var_pca)
+        plt.bar(range(0,len(exp_var_pca)), exp_var_pca, alpha=0.5, align='center', label='Individual explained variance')
+        plt.step(range(0,len(cum_sum_eigenvalues)), cum_sum_eigenvalues, where='mid',label='Cumulative explained variance')
+        plt.ylabel('Explained variance ratio')
+        plt.xlabel('Principal component index')
+        plt.legend(loc='best')
+        plt.tight_layout()
+        plt.show()
+    
+        # 3d scatterplot
+        # Color the data for the scatterplot
+        colors = []
+        for label in Y:
+            match label:
+                case '1x1':
+                    colors.append('#ff0000') # red
+                case '1x2':
+                    colors.append('#00ff00') # lime green
+                case '1x3':
+                    colors.append('#0000ff') # blue
+                case '1x4':
+                    colors.append('#ffff00') # yellow
+                case '2x2': 
+                    colors.append('#ff00ff') # magent
+                case '2x3':
+                    colors.append('#00ffff') # cyan
+                case '2x4':
+                    colors.append('#800080') # purple
+    
+    
+        fig = plt.figure(figsize=(12, 8))
+        ax = plt.axes(projection='3d')
+        sctt = ax.scatter(X_pca[:, 0], X_pca[:, 1], X_pca[:, 2], alpha=0.6, c=colors)
+        plt.title('3D scatterplot: 83 percent of the variability captured', pad=15)
+        ax.set_xlabel('First feature')
+        ax.set_ylabel('Second feature')
+        ax.set_zlabel('Third feature')
+        plt.show()
+    
+    
+    for i in range(0, 7):
+        plt.figure(figsize=(10, 7))
+        plt.scatter(X[:, i], Y, c=colors)
+        plt.show()
+    
+    
+
