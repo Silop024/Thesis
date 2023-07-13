@@ -1,3 +1,5 @@
+from enum import IntEnum
+
 class Debug:
     verbosity: int = 0
     
@@ -29,3 +31,9 @@ class Debug:
     @staticmethod
     def print_blue(text: str):
         print("\033[94m {}\033[00m".format(text))
+
+
+class ExitCode(IntEnum):
+    UserError = 1
+    
+    

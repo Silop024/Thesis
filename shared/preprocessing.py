@@ -46,6 +46,26 @@ def scale_image(image: np.ndarray) -> np.ndarray:
         
     return resized_image_with_border
 
+
+aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
+
+def detect_image_scale(image: np.ndarray) -> tuple[int, int]:
+    marker_params =  cv2.aruco.DetectorParameters_create()
+    marker_corners, _, _ = cv2.aruco.detectMarkers(image, aruco_dict, parameters=marker_params)
+    
+    if len(marker_corners) == 0:
+        exit(1)
+    
+    marker_width_px = np.linalg.norm(marker_corners[0][0][0] - marker_corners[0][0][1])
+    marker_height_px = np.linalg.norm(marker_corners[0][0][0] - marker_corners[0][0][3])
+    
+    # Marker is the size of a 6x6 lego brick, thus each 1x1 lego brick, in pixels will be:
+    width_scale = marker_width_px / 6
+    height_scale = marker_height_px / 6
+
+    return width_scale, height_scale
+
+
 def read_image_and_scale(image_path: str) -> np.ndarray:
     image = read_image(image_path)
     return scale_image(image)
