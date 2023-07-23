@@ -1,4 +1,6 @@
 from enum import IntEnum
+import threading
+import cv2
 
 class Debug:
     verbosity: int = 0
@@ -31,7 +33,19 @@ class Debug:
     @staticmethod
     def print_blue(text: str):
         print("\033[94m {}\033[00m".format(text))
+        
+        
+    @staticmethod
+    def display_image(image):
+        display_thread = threading.Thread(target=Debug.__show_image, args=(image))
+        display_thread.start()
+        
 
+    def __show_image(image):
+        cv2.imshow("Resulting image after preprocessing", image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        
 
 class ExitCode(IntEnum):
     UserError = 1
