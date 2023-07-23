@@ -1,74 +1,70 @@
 import cv2
+from cv2 import aruco
 import numpy as np
+from debugging import Debug
+
 
 def preprocess_image(image: np.ndarray) -> np.ndarray:
-    # Convert image to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    preprocessed_image = enhance_image(image)
+    preprocessed_image = morph_image(preprocessed_image)
+    preprocessed_image = scale_image(preprocessed_image)
+    preprocessed_image = segment_image(preprocessed_image)
     
-    # Blur image
-    blur = cv2.GaussianBlur(gray, (5,5), 0) 
+    if Debug.verbosity > 3:
+        Debug.display_image(preprocessed_image)
     
-    return blur
+    return preprocessed_image;
 
-def read_image_and_preprocess(image_path: str) -> np.ndarray:
-    #image = read_image_and_scale(image_path)
-    image = read_image(image_path)
-    
-    preprocessed_image = preprocess_image(image)
-    
-    return preprocessed_image
 
 def scale_image(image: np.ndarray) -> np.ndarray:
-    # Desired maximum size
-    max_size = 480
-
-    # Calculate the ratio of the new size to the old size
-    old_size = image.shape[:2]
-    ratio = float(max_size) / max(old_size)
-
-    # Calculate the new dimensions
-    new_dim = (int(image.shape[1] * ratio), int(image.shape[0] * ratio))
+    width_scale, height_scale = detect_image_scale(image)
     
-    resized_image = cv2.resize(image, new_dim)
+    new_dim = (int(image.shape[0] / width_scale), int(image.shape[1] / height_scale))
+
+    resized_image = cv2.resize(src=image, dsize=new_dim)
     
-    delta_w = max_size - new_dim[1]
-    delta_h = max_size - new_dim[0]
-    top, bottom = delta_h // 2, delta_h - (delta_h // 2)
-    left, right = delta_w // 2, delta_w - (delta_w // 2)
+    return resized_image
 
-    color = [255, 255, 255]
-    resized_image_with_border = cv2.copyMakeBorder(resized_image, top, bottom, left, right, cv2.BORDER_CONSTANT,
-                                                   value=color)
+
+def enhance_image(image: np.ndarray) -> np.ndarray:
+    enhanced_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    #enhanced_image = cv2.GaussianBlur(enhanced_image, ksize=(1, 1), sigmaX=1.0)
+    #enhanced_image = cv2.addWeighted(enhanced_image, 2.0, enhanced_image, -1.0, 0)
     
-    #cv2.imshow('ROI', resized_image_with_border)
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
-        
-    return resized_image_with_border
+    return enhanced_image
 
 
-aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
+def morph_image(image: np.ndarray) -> np.ndarray:
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    morphed_image = cv2.morphologyEx(src=image, op=cv2.MORPH_OPEN, kernel=kernel)
+    
+    return morphed_image
+
+
+def segment_image(image: np.ndarray) -> np.ndarray:
+    _, segmented_image = cv2.threshold(image, 55, 255, cv2.THRESH_BINARY)
+    
+    return segmented_image
+
 
 def detect_image_scale(image: np.ndarray) -> tuple[int, int]:
-    marker_params =  cv2.aruco.DetectorParameters_create()
-    marker_corners, _, _ = cv2.aruco.detectMarkers(image, aruco_dict, parameters=marker_params)
+    dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_250)
+    params =  aruco.DetectorParameters()
+    detector = aruco.ArucoDetector(dict, params)
+    
+    marker_corners, _, _ = detector.detectMarkers(image)
     
     if len(marker_corners) == 0:
-        exit(1)
+        return 1, 1
     
     marker_width_px = np.linalg.norm(marker_corners[0][0][0] - marker_corners[0][0][1])
     marker_height_px = np.linalg.norm(marker_corners[0][0][0] - marker_corners[0][0][3])
     
     # Marker is the size of a 6x6 lego brick, thus each 1x1 lego brick, in pixels will be:
-    width_scale = marker_width_px / 6
-    height_scale = marker_height_px / 6
+    width_scale = marker_width_px / 60
+    height_scale = marker_height_px / 60
 
     return width_scale, height_scale
-
-
-def read_image_and_scale(image_path: str) -> np.ndarray:
-    image = read_image(image_path)
-    return scale_image(image)
 
 
 def read_image(image_path: str) -> np.ndarray:
