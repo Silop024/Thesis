@@ -1,49 +1,68 @@
 import cv2
+from cv2 import aruco
 import numpy as np
-import skimage.filters
+from debugging import Debug
+
+
+def preprocess_image(image: np.ndarray) -> np.ndarray:
+    preprocessed_image = enhance_image(image)
+    preprocessed_image = morph_image(preprocessed_image)
+    preprocessed_image = scale_image(preprocessed_image)
+    preprocessed_image = segment_image(preprocessed_image)
+    
+    if Debug.verbosity > 3:
+        Debug.display_image(preprocessed_image)
+    
+    return preprocessed_image;
+
 
 def scale_image(image: np.ndarray) -> np.ndarray:
     width_scale, height_scale = detect_image_scale(image)
     
-    new_dim = (image.shape[0] / width_scale, image.shape[1] / height_scale)
+    new_dim = (int(image.shape[0] / width_scale), int(image.shape[1] / height_scale))
 
     resized_image = cv2.resize(src=image, dsize=new_dim)
-        
+    
     return resized_image
 
 
 def enhance_image(image: np.ndarray) -> np.ndarray:
-    enhanced_image = skimage.filters.unsharp_mask(image)
+    enhanced_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    #enhanced_image = cv2.GaussianBlur(enhanced_image, ksize=(1, 1), sigmaX=1.0)
+    #enhanced_image = cv2.addWeighted(enhanced_image, 2.0, enhanced_image, -1.0, 0)
     
     return enhanced_image
 
 
 def morph_image(image: np.ndarray) -> np.ndarray:
-    morphed_image = cv2.morphologyEx(src=image, op=cv2.MORPH_CLOSE)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    morphed_image = cv2.morphologyEx(src=image, op=cv2.MORPH_OPEN, kernel=kernel)
     
     return morphed_image
 
 
 def segment_image(image: np.ndarray) -> np.ndarray:
-    _, segmented_image = cv2.threshold(image, 0, 255)
+    _, segmented_image = cv2.threshold(image, 55, 255, cv2.THRESH_BINARY)
     
     return segmented_image
 
 
-aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
 def detect_image_scale(image: np.ndarray) -> tuple[int, int]:
-    marker_params =  cv2.aruco.DetectorParameters_create()
-    marker_corners, _, _ = cv2.aruco.detectMarkers(image, aruco_dict, parameters=marker_params)
+    dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_250)
+    params =  aruco.DetectorParameters()
+    detector = aruco.ArucoDetector(dict, params)
+    
+    marker_corners, _, _ = detector.detectMarkers(image)
     
     if len(marker_corners) == 0:
-        exit(1)
+        return 1, 1
     
     marker_width_px = np.linalg.norm(marker_corners[0][0][0] - marker_corners[0][0][1])
     marker_height_px = np.linalg.norm(marker_corners[0][0][0] - marker_corners[0][0][3])
     
     # Marker is the size of a 6x6 lego brick, thus each 1x1 lego brick, in pixels will be:
-    width_scale = marker_width_px / 6
-    height_scale = marker_height_px / 6
+    width_scale = marker_width_px / 60
+    height_scale = marker_height_px / 60
 
     return width_scale, height_scale
 
