@@ -1,7 +1,7 @@
 import cv2
 from cv2 import aruco
 import numpy as np
-from debugging import Debug
+from .debugging import Debug
 
 
 def preprocess_image(image: np.ndarray) -> np.ndarray:
@@ -69,4 +69,5 @@ def detect_image_scale(image: np.ndarray) -> tuple[int, int]:
 
 def read_image(image_path: str) -> np.ndarray:
     image = cv2.imread(image_path)
+    
     return image.copy()
