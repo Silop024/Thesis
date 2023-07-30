@@ -17,42 +17,37 @@ def get_hu_moments(roi: np.ndarray) -> np.ndarray:
 
 
 def get_zernike_moments(roi: np.ndarray, image: np.ndarray) -> np.ndarray:
-    center, radius = cv2.minEnclosingCircle(roi)
+    _, radius = cv2.minEnclosingCircle(roi)
     
-    mask = np.ones_like(image) * 255
-    cv2.drawContours(mask, [roi], -1, 0, -1)
+    mask = np.zeros_like(image)
+    cv2.drawContours(mask, [roi], -1, color=255, thickness=cv2.FILLED)
     (x, y, w, h) = cv2.boundingRect(roi)
     roi = mask[y:y + h, x:x + w]
-   
-    #print(mask.shape)
-    #print(image.shape)
-    #print(roi.shape)
     
-    #cv2.imshow('Mask Image', mask)
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
-    
-    #roi = roi.squeeze()
-    
-    zerinke_moments = mahotas.features.zernike_moments(mask, radius=radius, cm=center)
+    zerinke_moments = mahotas.features.zernike_moments(roi, radius=radius)
     
     return zerinke_moments
 
 
 def get_sift(roi: np.ndarray, image: np.ndarray) -> np.ndarray:
-    sift = cv2.SIFT_create()
-    
-    mask = np.ones_like(image) * 255
-    cv2.drawContours(mask, [roi], -1, 0, -1)
+    mask = np.zeros_like(image)
+    cv2.drawContours(mask, [roi], -1, color=255, thickness=cv2.FILLED)
     (x, y, w, h) = cv2.boundingRect(roi)
     roi = mask[y:y + h, x:x + w]
     
-    keypoints = sift.detect(roi, None)
+    sift = cv2.SIFT_create()
+    _, descriptors = sift.detectAndCompute(roi, None)
     
-    return keypoints
+    return descriptors
     
     
-def get_hog(roi: np.ndarray) -> np.ndarray:
-    hog, _ = skimage.feature.hog(roi, pixels_per_cell=(8, 8), cells_per_block=(2, 2))
+def get_hog(roi: np.ndarray, image: np.ndarray) -> np.ndarray:
+    mask = np.zeros_like(image)
+    cv2.drawContours(mask, [roi], -1, color=255, thickness=cv2.FILLED)
+    (x, y, w, h) = cv2.boundingRect(roi)
+    roi = mask[y:y + h, x:x + w]
+    
+    hog = skimage.feature.hog(roi, orientations=9, pixels_per_cell=(8, 8), cells_per_block=(2, 2), block_norm='L2', feature_vector=True)
     
     return hog
+
