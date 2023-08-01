@@ -5,6 +5,8 @@ import configparser
 import os
 import cv2
 import numpy as np
+from scipy.spatial.distance import pdist, squareform
+from sklearn.manifold import TSNE
 
 import sklearn.preprocessing
 from sklearn.decomposition import PCA
@@ -71,28 +73,101 @@ def test_zernike_moments(images: Tuple[str, np.ndarray]):
             
 # TODO: Fix SIFT with Bag-Of-Words or K-Means clustering or other things.
 def test_sift(images: Tuple[str, np.ndarray]):
-    X = []  # features
-    Y = []  # labels
-    
+    descriptors = []
+    for _, preprocessed_image in images:
+        rois = extraction.get_regions_of_interest(preprocessed_image)
+        
+        for roi in rois:
+            features = extraction.get_sift(roi)
+            
+            if features is not None:
+                descriptors.extend(features)
+
+    clusters = 100
+    kmeans = KMeans(n_clusters=clusters)
+    kmeans.fit(descriptors)
+    codebook = kmeans.cluster_centers_
+
+    X = []
+    Y = []
     for shape_name, preprocessed_image in images:
         rois = extraction.get_regions_of_interest(preprocessed_image)
         
         for roi in rois:
-            features = shared.feature_extraction.get_sift(roi)
+            descriptors = extraction.get_sift(roi)
             
-            X.append(features)
+            if descriptors is None or descriptors.shape[0] <= 0:
+                continue
+            
+            histogram = np.zeros(codebook.shape[0])
+            
+            distances = np.linalg.norm(descriptors[:, None] - codebook, axis=-1)
+            
+            nearest_clusters = np.argmin(distances, axis=1)
+            
+            for cluster_index in nearest_clusters:
+                histogram[cluster_index] += 1
+            
+            histogram_sum = np.sum(histogram)
+            
+            if histogram_sum != 0:
+                histogram /= histogram_sum
+            histogram = np.array(histogram)
+            
+            X.append(histogram)
             Y.append(shape_name)
 
-    scaler = sklearn.preprocessing.StandardScaler()
     X = np.array(X)
-    X = scaler.fit_transform(X)
+    Y = np.array(Y)
     
-    #pca = PCA(7)
-    #X = pca.fit_transform(X)
-        
-    encoder = sklearn.preprocessing.LabelEncoder()
-    Y_le = encoder.fit_transform(Y)
-    Y = encoder.inverse_transform(Y_le)
+    print(X.shape)
+    print(Y.shape)
+    """
+    unique_labels = np.unique(Y)
+    for label in unique_labels:
+        mean_histogram = X[Y == label].mean(axis=0)
+        plt.bar(range(len(mean_histogram)), mean_histogram, alpha=0.5, label=f'Shape {label}')
+    plt.title('Mean Histograms by Label')
+    plt.xlabel('Bin')
+    plt.ylabel('Count')
+    plt.legend()
+    plt.show()
+    
+    for label in unique_labels:
+        distances = pdist(X[Y == label], metric='euclidean')
+        plt.hist(distances, bins=50, alpha=0.5, label=f'Shape {label}')
+    plt.title('Histograms of Histogram Distances by Label')
+    plt.xlabel('Distance')
+    plt.ylabel('Count')
+    plt.legend()
+    plt.show()
+    
+    tsne = TSNE(n_components=2)
+    X_tsne = tsne.fit_transform(X)
+
+    for label in unique_labels:
+        plt.scatter(X_tsne[Y == label, 0], X_tsne[Y == label, 1], label=f'Shape {label}')
+    plt.title('t-SNE Projection of Histograms by Label')
+    plt.xlabel('Component 1')
+    plt.ylabel('Component 2')
+    plt.legend()
+    #plt.show()
+
+    pca = PCA(n_components=2)
+    X_pca = pca.fit_transform(X)
+    
+    for label in unique_labels:
+        plt.scatter(X_pca[Y == label, 0], X_pca[Y == label, 1], label=f'Shape {label}')
+    plt.title('PCA Projection of Histograms by Label')
+    plt.xlabel('Component 1')
+    plt.ylabel('Component 2')
+    plt.legend()
+    plt.show()"""
+    
+    #tsne = TSNE(n_components=3)
+    #X = tsne.fit_transform(X)
+    pca = PCA(n_components=3)
+    X = pca.fit_transform(X)
     
     show_features(X, Y)
     
@@ -120,8 +195,6 @@ def test_hog(images: Tuple[str, np.ndarray]):
     encoder = sklearn.preprocessing.LabelEncoder()
     Y_le = encoder.fit_transform(Y)
     Y = encoder.inverse_transform(Y_le)
-    
-    print(X.shape)
     
     show_features(X, Y)
 
