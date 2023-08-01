@@ -1,4 +1,4 @@
-import shared.feature_extraction
+import shared.feature_extraction as extraction
 import shared.preprocessing
 
 import configparser
@@ -8,11 +8,11 @@ import numpy as np
 
 import sklearn.preprocessing
 from sklearn.decomposition import PCA
-from skimage import measure
+from sklearn.cluster import KMeans
 
 import matplotlib.pyplot as plt
 
-from typing import Callable, Tuple
+from typing import Tuple
 
 
 def test_hu_moments(images: Tuple[str, np.ndarray]):
@@ -20,12 +20,11 @@ def test_hu_moments(images: Tuple[str, np.ndarray]):
     Y = []  # labels
     
     for shape_name, preprocessed_image in images: 
-        contours, _ = cv2.findContours(preprocessed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        max_contour_area = 0.9 * preprocessed_image.shape[0] * preprocessed_image.shape[1]
-        contours = [cnt for cnt in contours if cv2.contourArea(cnt) < max_contour_area]
+        #rois = extraction.get_regions_of_interest(preprocessed_image)
+        rois = extraction.get_contours(preprocessed_image)
         
-        for contour in contours:
-            features = shared.feature_extraction.get_hu_moments(contour)
+        for roi in rois:
+            features = shared.feature_extraction.get_hu_moments(roi)
             
             X.append(features)
             Y.append(shape_name)
@@ -49,9 +48,7 @@ def test_zernike_moments(images: Tuple[str, np.ndarray]):
     Y = []  # labels
     
     for shape_name, preprocessed_image in images:
-        contours, _ = cv2.findContours(preprocessed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        max_contour_area = 0.9 * preprocessed_image.shape[0] * preprocessed_image.shape[1]
-        contours = [cnt for cnt in contours if cv2.contourArea(cnt) < max_contour_area]
+        contours = extraction.get_contours(preprocessed_image)
         
         for contour in contours:
             features = shared.feature_extraction.get_zernike_moments(contour, preprocessed_image)
@@ -78,12 +75,10 @@ def test_sift(images: Tuple[str, np.ndarray]):
     Y = []  # labels
     
     for shape_name, preprocessed_image in images:
-        contours, _ = cv2.findContours(preprocessed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        max_contour_area = 0.9 * preprocessed_image.shape[0] * preprocessed_image.shape[1]
-        contours = [cnt for cnt in contours if cv2.contourArea(cnt) < max_contour_area]
+        rois = extraction.get_regions_of_interest(preprocessed_image)
         
-        for contour in contours:
-            features = shared.feature_extraction.get_sift(contour, preprocessed_image)
+        for roi in rois:
+            features = shared.feature_extraction.get_sift(roi)
             
             X.append(features)
             Y.append(shape_name)
@@ -107,27 +102,26 @@ def test_hog(images: Tuple[str, np.ndarray]):
     Y = []  # labels
     
     for shape_name, preprocessed_image in images:
-        contours, _ = cv2.findContours(preprocessed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        max_contour_area = 0.9 * preprocessed_image.shape[0] * preprocessed_image.shape[1]
-        contours = [cnt for cnt in contours if cv2.contourArea(cnt) < max_contour_area]
+        rois = extraction.get_regions_of_interest(preprocessed_image)
         
-        for contour in contours:
-            features = shared.feature_extraction.get_hog(contour, preprocessed_image)
+        for roi in rois:
+            features = shared.feature_extraction.get_hog(roi)
             
-            if len(features) > 0:
-                X.append(features)
-                Y.append(shape_name)
-                
-    for elem in X:
-        print(elem.shape)
+            X.append(features)
+            Y.append(shape_name)
 
     scaler = sklearn.preprocessing.StandardScaler()
     X = np.array(X)
     X = scaler.fit_transform(X)
+    
+    pca = PCA(n_components=20)
+    X = pca.fit_transform(X)
         
     encoder = sklearn.preprocessing.LabelEncoder()
     Y_le = encoder.fit_transform(Y)
     Y = encoder.inverse_transform(Y_le)
+    
+    print(X.shape)
     
     show_features(X, Y)
 
@@ -145,7 +139,8 @@ def test_all(image_paths):
     
     #test_hu_moments(images)
     #test_zernike_moments(images)
-    test_hog(images)
+    #test_hog(images)
+    test_sift(images)
 
 
 def show_features(X, Y):
@@ -158,6 +153,7 @@ def show_features(X, Y):
     fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(15, 12))
     axes_flat = axes.ravel()
 
+    ax: np.ndarray
     for i in range(num_features):
         ax = axes_flat[i]
         for label in np.unique(Y):
@@ -165,11 +161,12 @@ def show_features(X, Y):
             ax.scatter(np.arange(X.shape[0])[mask], X[:, i][mask], label=f'Shape {label}')
 
         ax.set_title(f'Feature {i}')
-        #ax.legend()
 
     for i in range(num_features, num_rows * num_cols):
         axes_flat[i].axis('off')
 
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, loc='lower center', ncol=len(labels))
     plt.tight_layout()
     plt.show()
 
