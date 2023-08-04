@@ -2,8 +2,13 @@ import cv2
 import numpy as np
 import mahotas.features
 import skimage.feature
+from sklearn.cluster import KMeans
 
-from typing import List
+from typing import List, Tuple
+
+from .features import FeatureType
+
+import plotly.graph_objs as go
 
 
 def get_hu_moments(roi: np.ndarray) -> np.ndarray:
@@ -18,11 +23,7 @@ def get_hu_moments(roi: np.ndarray) -> np.ndarray:
     return hu_moments.flatten()
 
 
-def get_zernike_moments(contour: np.ndarray, image: np.ndarray) -> np.ndarray:
-    _, radius = cv2.minEnclosingCircle(contour)
-    
-    roi = contour_to_roi(contour, image)
-    
+def get_zernike_moments(roi: np.ndarray, radius: int) -> np.ndarray:
     zerinke_moments = mahotas.features.zernike_moments(roi, radius=radius)
     
     return zerinke_moments
@@ -41,29 +42,33 @@ def get_hog(roi: np.ndarray) -> np.ndarray:
     return hog
 
 
-def contour_to_roi(contour, image: np.ndarray) -> np.ndarray:
-    # Reduce image to just the bounded area of the contour
+def contour_to_roi(contour: np.array) -> np.ndarray:
+     # Get bounding rectangle dimensions
     x, y, w, h = cv2.boundingRect(contour)
-    roi = image[y:y + h, x:x + w]
     
     # Define maximum dimensions of the ROI
-    max_h = 100
-    max_w = 100
+    height = 100
+    width = 100
     
     # Create a blank image (padded_roi) of the maximum dimensions
-    padded_roi = np.zeros((max_h, max_w), dtype=image.dtype)
+    padded_roi = np.zeros((height, width), dtype=np.uint8)
     
-    # Calculate the offset to place the ROI in the center of padded_roi
-    offset_x = (max_w - w) // 2
-    offset_y = (max_h - h) // 2
+    # Calculate the offset to place the contour in the center of padded_roi
+    offset_x = (width - w) // 2
+    offset_y = (height - h) // 2
     
-    # Place the ROI in the center of padded_roi image
-    padded_roi[offset_y:offset_y + h, offset_x:offset_x + w] = roi
+    # Create a new contour with updated coordinates
+    new_contour = contour.copy()
+    new_contour[:, 0, 0] = contour[:, 0, 0] - x + offset_x
+    new_contour[:, 0, 1] = contour[:, 0, 1] - y + offset_y
+    
+    # Draw the contour on padded_roi
+    cv2.drawContours(padded_roi, [new_contour], -1, 255, thickness=cv2.FILLED)
         
     return padded_roi
 
 
-def get_contours(image: np.ndarray) -> List:
+def get_contours(image: np.ndarray) -> List[np.array]:
     # Get all contours in binary image
     contours, _ = cv2.findContours(image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
@@ -80,13 +85,90 @@ def get_regions_of_interest(image: np.ndarray) -> List[np.ndarray]:
     # Convert contours to regions of interest.
     rois = []
     for contour in contours:
-        roi = contour_to_roi(contour, image)
+        roi = contour_to_roi(contour)
         rois.append(roi)
         
     return rois
         
+        
+def create_codebook(images: List[Tuple[str, np.ndarray]], size=100) -> Tuple[np.ndarray, np.ndarray]:
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 0.01)
+    flags = cv2.KMEANS_RANDOM_CENTERS
+    
+    descriptors = []
+    for _, image in images:
+        rois = get_regions_of_interest(image)
+        
+        for roi in rois:
+            des = get_sift(roi)
+        
+            if des is not None:
+                descriptors.extend(des)
+        
+    
+    X = np.vstack(descriptors)
+    
+    _, labels, _ = cv2.kmeans(X, size, None, criteria, 10, flags)
+    
+    codebook = np.zeros((size, X.shape[1]))
+    
+    for i in range(size):
+        codebook[i] = np.mean(X[labels.ravel() == i], axis=0)
+        
+    return codebook, descriptors
 
+        
+def extract_all_sift(image_tuple: Tuple[str, np.ndarray], codebook, descriptors) -> Tuple[np.array, np.array]:
+    label, image = image_tuple
+    
+    X = []  # features
+    Y = []  # labels
+    
+    for des in descriptors:
+        histogram = np.zeros(codebook.shape[0])
+        
+        dists = np.linalg.norm(codebook - des, axis=1)
+        
+        min_idx = np.argmin(dists)
+        
+        histogram[min_idx] += 1
+        
+        X.append(histogram)
+        Y.append(label)
+    
+    return X, Y
+    
+    
+    
+        
 
+def extract_all_features(image_tuple: Tuple[str, np.ndarray], feature_type: FeatureType) -> Tuple[np.array, np.array]:
+    if feature_type is FeatureType.SIFT:
+        return extract_all_sift(image_tuple)
+    
+    label, image = image_tuple
+   
+    X = []  # features
+    Y = []  # labels
+    
+    contours = get_contours(image)
+    
+    for contour in contours:
+        roi = contour_to_roi(contour)
+        
+        match feature_type:
+            case FeatureType.HuMoments:
+                features = get_hu_moments(roi)
+            case FeatureType.ZernikeMoments:
+                _, radius = cv2.minEnclosingCircle(contour)
+                features = get_zernike_moments(roi, radius)
+            case FeatureType.HOG:
+                features = get_hog(roi)
+        
+        X.append(features)
+        Y.append(label)
+    
+    return X, Y
 
 
 
