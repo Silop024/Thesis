@@ -1,6 +1,10 @@
-from enum import IntEnum
+# Python standard libraries
 import threading
+from enum import IntEnum
+
+# Installed with pip
 import cv2
+
 
 class Debug:
     verbosity: int = 0

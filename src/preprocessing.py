@@ -1,6 +1,7 @@
+# Installed with pip
 import cv2
-from cv2 import aruco
 import numpy as np
+from cv2 import aruco
 
 
 def preprocess_image(image: np.ndarray) -> np.ndarray:

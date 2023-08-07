@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import configparser
 import os
-from shared.preprocessing import enhance_image, read_image, scale_image, segment_image, morph_image
+import src.preprocessing as preprocessing
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -11,14 +11,14 @@ image_dir = config['Paths']['test_dir']
 image_files = os.listdir(image_dir)
 
 class PreprocessingTest(unittest.TestCase):
-    image: np.ndarray = read_image(f"{image_dir}{image_files[2]}")
+    image: np.ndarray = preprocessing.read_image(f"{image_dir}{image_files[2]}")
     
     def test_denoising(self):
         self.assertTrue(True)
     
     
     def test_enhancement(self):
-        enhanced_image = enhance_image(self.image)
+        enhanced_image = preprocessing.enhance_image(self.image)
         
         display_test_result_image(result_image=enhanced_image, op_name="image enhancement")
         
@@ -26,7 +26,7 @@ class PreprocessingTest(unittest.TestCase):
     
     
     def test_scaling(self):
-        scaled_image = scale_image(self.image)
+        scaled_image = preprocessing.scale_image(self.image)
         
         display_test_result_image(result_image=scaled_image, op_name="image scaling")
         
@@ -34,7 +34,7 @@ class PreprocessingTest(unittest.TestCase):
     
     
     def test_morphology(self):
-        morphed_image = morph_image(self.image)
+        morphed_image = preprocessing.morph_image(self.image)
         
         display_test_result_image(result_image=morphed_image, op_name="morphological operations")
         
@@ -42,7 +42,7 @@ class PreprocessingTest(unittest.TestCase):
     
     
     def test_segmentation(self):
-        segmented_image = segment_image(self.image)
+        segmented_image = preprocessing.segment_image(self.image)
         
         display_test_result_image(result_image=segmented_image, op_name="image segmentation")
         
@@ -52,10 +52,10 @@ class PreprocessingTest(unittest.TestCase):
     def test_all(self):
         preprocessed_image = self.image
         
-        preprocessed_image = enhance_image(preprocessed_image)
-        preprocessed_image = morph_image(preprocessed_image)
+        preprocessed_image = preprocessing.enhance_image(preprocessed_image)
+        preprocessed_image = preprocessing.morph_image(preprocessed_image)
         #preprocessed_image = scale_image(preprocessed_image)
-        preprocessed_image = segment_image(preprocessed_image)
+        preprocessed_image = preprocessing.segment_image(preprocessed_image)
         
         
         display_test_result_image(result_image=preprocessed_image, op_name="all")
