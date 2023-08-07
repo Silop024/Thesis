@@ -2,13 +2,10 @@ import cv2
 import numpy as np
 import mahotas.features
 import skimage.feature
-from sklearn.cluster import KMeans
 
 from typing import List, Tuple
 
-from .features import FeatureType
-
-import plotly.graph_objs as go
+from features import FeatureType
 
 
 def get_hu_moments(roi: np.ndarray) -> np.ndarray:

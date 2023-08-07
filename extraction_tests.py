@@ -128,7 +128,7 @@ def test_hog(images: Tuple[str, np.ndarray]):
             
     X, Y = processing.scale_data(X, Y)
     
-    n_components = 7
+    n_components = 5
     pca = PCA(n_components=n_components)
     X = pca.fit_transform(X)
     
@@ -146,33 +146,35 @@ def test_all(image_paths):
         images.append((shape_name, preprocessed_image))
     
     
-    test_hu_moments(images)
-    test_zernike_moments(images)
-    test_hog(images)
+    #test_hu_moments(images)
+    #test_zernike_moments(images)
+    #test_hog(images)
     #test_sift(images)
 
 
 def show_features(X_pca, Y, pca: PCA, n_components: int):
-    total_var = pca.explained_variance_ratio_.sum() * 100
-    
+    # Cumulative explained variance ratio chart
     exp_var_cumul = np.cumsum(pca.explained_variance_ratio_)
-
+    total_var = pca.explained_variance_ratio_.sum() * 100
+        
     fig = px.area(
         x=range(1, exp_var_cumul.shape[0] + 1),
         y=exp_var_cumul,
-        labels={"x": "# Components", "y": "Explained Variance"}
+        labels={"x": "# Components", "y": "Explained Variance"},
+        title=f'Total Explained Variance: {total_var:.2f}%',
     )
     fig.show()
     
-    """fig = px.scatter_matrix(
+    # Scatter matrix of the principal components
+    fig = px.scatter_matrix(
         X_pca,
-        labels=Y,
         dimensions=range(n_components),
         color=Y
     )
-    fig.update_traces(diagonal_visible=False)
-    fig.show()"""
+    fig.update_traces(diagonal_visible=False, showupperhalf=False)
+    fig.show()
     
+    # 3D scatter plot of the 3 first principal components
     fig = px.scatter_3d(
         X_pca, x=0, y=1, z=2, 
         labels=Y,

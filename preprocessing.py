@@ -1,36 +1,16 @@
 import cv2
 from cv2 import aruco
 import numpy as np
-from .debugging import Debug
 
 
 def preprocess_image(image: np.ndarray) -> np.ndarray:
     preprocessed_image = enhance_image(image)
     
-    """cv2.imshow("preprocessed image", preprocessed_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()"""
-    
     preprocessed_image = morph_image(preprocessed_image)
-    
-    """cv2.imshow("preprocessed image", preprocessed_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()"""
     
     preprocessed_image = scale_image(preprocessed_image)
     
-    """cv2.imshow("preprocessed image", preprocessed_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()"""
-    
     preprocessed_image = segment_image(preprocessed_image)
-    
-    """cv2.imshow("preprocessed image", preprocessed_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()"""
-    
-    if Debug.verbosity > 3:
-        Debug.display_image(preprocessed_image)
     
     return preprocessed_image;
 
