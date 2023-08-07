@@ -1,6 +1,8 @@
-from dataclasses import dataclass
-from enum import Enum
+# Python standard libraries
 import configparser
+from enum import Enum
+from dataclasses import dataclass
+
 
 class Shape(Enum):
     Undefined = "-1" # One-class svm classifier marks it as a shape it has not seen before.
