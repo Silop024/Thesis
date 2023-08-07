@@ -1,11 +1,14 @@
-import cv2
-import numpy as np
-import mahotas.features
-import skimage.feature
+# MY own files
+from features import FeatureType
 
+# Python standard libraries
 from typing import List, Tuple
 
-from features import FeatureType
+# Installed with pip
+import cv2
+import numpy as np
+import skimage.feature
+import mahotas.features
 
 
 def get_hu_moments(roi: np.ndarray) -> np.ndarray:
@@ -67,7 +70,7 @@ def contour_to_roi(contour: np.array) -> np.ndarray:
 
 def get_contours(image: np.ndarray) -> List[np.array]:
     # Get all contours in binary image
-    contours, _ = cv2.findContours(image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(image, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     
     # Remove contour that appears around the entire image for some unknown reason
     max_contour_area = 0.9 * image.shape[0] * image.shape[1]

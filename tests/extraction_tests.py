@@ -1,17 +1,18 @@
-import shared.feature_extraction as extraction
-import shared.preprocessing
-from shared.features import FeatureType
-import shared.processing as processing
+# My own files
+import src.processing as processing
+from src.features import FeatureType
+import src.preprocessing as preprocessing
+import src.feature_extraction as extraction
 
-import configparser
+# Python standard libraries
 import os
-import numpy as np
-
-from sklearn.decomposition import PCA
-
-import plotly.express as px
-
+import configparser
 from typing import Tuple
+
+# Installed with pip
+import numpy as np
+import plotly.express as px
+from sklearn.decomposition import PCA
 
 
 def test_hu_moments(images: Tuple[str, np.ndarray]):
@@ -137,8 +138,8 @@ def test_hog(images: Tuple[str, np.ndarray]):
 def test_all(image_paths):
     images = []
     for image_path in image_paths:
-        image = shared.preprocessing.read_image(image_path)
-        preprocessed_image = shared.preprocessing.preprocess_image(image)
+        image = preprocessing.read_image(image_path)
+        preprocessed_image = preprocessing.preprocess_image(image)
         
         file_name = os.path.basename(image_path)
         shape_name = file_name.split('_')[0]
