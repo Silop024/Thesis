@@ -1,49 +1,57 @@
+# My own files
+import processing
+import preprocessing
+from features import FeatureType
+from feature_extraction import extract_all_features
+
+# Python standard libraries
 import os
 import configparser
-import numpy as np
-import joblib
 from typing import List, Tuple
 
-from sklearn.decomposition import PCA
-import plotly.express as px
+# Installed with pip
+import joblib
+import numpy as np
 from sklearn import svm
-
-from feature_extraction import extract_all_features
-from features import FeatureType
-from processing import scale_data
-import preprocessing
+import plotly.express as px
+from sklearn.decomposition import PCA
 
 
 def train(images: List[Tuple[str, np.ndarray]]):
     X = []  # features
     Y = []  # labels
     
+    # Get all features from the image
     for image_tuple in images:
         x, y = extract_all_features(image_tuple, FeatureType.HOG)
         
         X.extend(x)
         Y.extend(y)
         
-    X, Y = scale_data(X, Y)
+    # Process data before training
+    X = processing.scale_data(X)
+    Y = processing.fix_labels(Y)
     
-    n_components = 5
-    pca = PCA(n_components=n_components)
-    X = pca.fit_transform(X)
+    pca = processing.create_pca(X, n_components=5) # Fit a principal component analyser (pca)
+    X = processing.use_pca(X, pca) # Use the pca to transform the data to the desire dimensionality.
     
+    # Train classifier
     clf = svm.SVC()
     clf.fit(X, Y)
     
+    # Save the classifier and pca, the same pca needs to be used with the same classifier
+    # for every classification task. Otherwise it will most likely produce an error.
     model_dir = config['Paths']['model_dir']
     
     joblib.dump(pca, os.path.join(model_dir, 'pca.joblib'))
-    joblib.dump(clf, os.path.join(model_dir, f"clf.joblib"))
+    joblib.dump(clf, os.path.join(model_dir, 'clf.joblib'))
     
     
 def show_features(X_pca, Y, pca: PCA):
-    # Cumulative explained variance ratio chart
     exp_var_cumul = np.cumsum(pca.explained_variance_ratio_)
     total_var = pca.explained_variance_ratio_.sum() * 100
         
+    # Cumulative explained variance ratio chart
     fig = px.area(
         x=range(1, exp_var_cumul.shape[0] + 1),
         y=exp_var_cumul,
