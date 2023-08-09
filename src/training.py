@@ -13,8 +13,7 @@ from typing import List, Tuple
 import joblib
 import numpy as np
 from sklearn import svm
-import plotly.express as px
-from sklearn.decomposition import PCA
+from sklearn.neighbors import LocalOutlierFactor
 
 
 def train(images: List[Tuple[str, np.ndarray]]):
@@ -36,8 +35,12 @@ def train(images: List[Tuple[str, np.ndarray]]):
     X = processing.use_pca(X, pca) # Use the pca to transform the data to the desire dimensionality.
     
     # Train classifier
-    clf = svm.SVC()
+    clf = svm.SVC(random_state=0)
     clf.fit(X, Y)
+    
+    # Train rejecter
+    rej = LocalOutlierFactor(novelty=True)
+    rej.fit(X)
     
     # Save the classifier and pca, the same pca needs to be used with the same classifier
     # for every classification task. Otherwise it will most likely produce an error.
@@ -45,38 +48,7 @@ def train(images: List[Tuple[str, np.ndarray]]):
     
     joblib.dump(pca, os.path.join(model_dir, 'pca.joblib'))
     joblib.dump(clf, os.path.join(model_dir, 'clf.joblib'))
-    
-    
-def show_features(X_pca, Y, pca: PCA):
-    exp_var_cumul = np.cumsum(pca.explained_variance_ratio_)
-    total_var = pca.explained_variance_ratio_.sum() * 100
-        
-    # Cumulative explained variance ratio chart
-    fig = px.area(
-        x=range(1, exp_var_cumul.shape[0] + 1),
-        y=exp_var_cumul,
-        labels={"x": "# Components", "y": "Explained Variance"},
-        title=f'Total Explained Variance: {total_var:.2f}%',
-    )
-    fig.show()
-    
-    # Scatter matrix of the principal components
-    fig = px.scatter_matrix(
-        X_pca,
-        dimensions=range(pca.n_components_),
-        color=Y
-    )
-    fig.update_traces(diagonal_visible=False, showupperhalf=False)
-    fig.show()
-    
-    # 3D scatter plot of the 3 first principal components
-    fig = px.scatter_3d(
-        X_pca, x=0, y=1, z=2, 
-        labels=Y,
-        color=Y,
-        title=f'Total Explained Variance: {total_var:.2f}%',
-    )
-    fig.show()
+    joblib.dump(rej, os.path.join(model_dir, 'rej.joblib'))
     
     
 if __name__ == '__main__':

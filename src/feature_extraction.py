@@ -9,6 +9,8 @@ import cv2
 import numpy as np
 import skimage.feature
 import mahotas.features
+import plotly.express as px
+from sklearn.decomposition import PCA
 
 
 def get_hu_moments(roi: np.ndarray) -> np.ndarray:
@@ -73,10 +75,45 @@ def get_contours(image: np.ndarray) -> List[np.array]:
     contours, _ = cv2.findContours(image, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     
     # Remove contour that appears around the entire image for some unknown reason
-    max_contour_area = 0.9 * image.shape[0] * image.shape[1]
+    max_contour_area = 0.5 * image.shape[0] * image.shape[1]
     contours = [cnt for cnt in contours if cv2.contourArea(cnt) < max_contour_area]
     
+    contours = sort_contours(contours)
+    
     return contours
+
+
+def sort_contours(contours: List) -> List:
+    bboxes = [cv2.boundingRect(i) for i in contours]
+    
+    c = np.array(bboxes)
+    max_height = np.max(c[::, 3])
+    # Sort the contours by y-value
+    by_y = sorted(bboxes, key=lambda x: x[1])  # y values
+
+    line_y = by_y[0][1]       # first y
+    line = 1
+    by_line = []
+
+    # Assign a line number to each contour
+    for x, y, w, h in by_y:
+        if y > line_y + max_height:
+            line_y = y
+            line += 1
+        
+        by_line.append((line, x, y, w, h))
+
+    # This will now sort automatically by line then by x
+    bboxes_sorted = [(x, y, w, h) for line, x, y, w, h in sorted(by_line)]
+    
+    sorted_contours = []
+    for bbox in bboxes_sorted:
+        for contour in contours:
+            if cv2.boundingRect(contour) == bbox:
+                sorted_contours.append(contour)
+                break
+    
+    return sorted_contours
 
 
 def get_regions_of_interest(image: np.ndarray) -> List[np.ndarray]:
@@ -137,9 +174,6 @@ def extract_all_sift(image_tuple: Tuple[str, np.ndarray], codebook, descriptors)
         Y.append(label)
     
     return X, Y
-    
-    
-    
         
 
 def extract_all_features(image_tuple: Tuple[str, np.ndarray], feature_type: FeatureType) -> Tuple[np.array, np.array]:
@@ -173,4 +207,33 @@ def extract_all_features(image_tuple: Tuple[str, np.ndarray], feature_type: Feat
 
 
     
+def show_features(X_pca, Y, pca: PCA):
+    exp_var_cumul = np.cumsum(pca.explained_variance_ratio_)
+    total_var = pca.explained_variance_ratio_.sum() * 100
+        
+    # Cumulative explained variance ratio chart
+    fig = px.area(
+        x=range(1, exp_var_cumul.shape[0] + 1),
+        y=exp_var_cumul,
+        labels={"x": "# Components", "y": "Explained Variance"},
+        title=f'Total Explained Variance: {total_var:.2f}%',
+    )
+    fig.show()
     
+    # Scatter matrix of the principal components
+    fig = px.scatter_matrix(
+        X_pca,
+        dimensions=range(pca.n_components_),
+        color=Y
+    )
+    fig.update_traces(diagonal_visible=False, showupperhalf=False)
+    fig.show()
+    
+    # 3D scatter plot of the 3 first principal components
+    fig = px.scatter_3d(
+        X_pca, x=0, y=1, z=2, 
+        labels=Y,
+        color=Y,
+        title=f'Total Explained Variance: {total_var:.2f}%',
+    )
+    fig.show()
