@@ -1,19 +1,19 @@
+# Installed with pip
 import cv2
-from cv2 import aruco
 import numpy as np
-from debugging import Debug
+from cv2 import aruco
 
 
 def preprocess_image(image: np.ndarray) -> np.ndarray:
     preprocessed_image = enhance_image(image)
+    
     preprocessed_image = morph_image(preprocessed_image)
+    
     preprocessed_image = scale_image(preprocessed_image)
+    
     preprocessed_image = segment_image(preprocessed_image)
     
-    if Debug.verbosity > 3:
-        Debug.display_image(preprocessed_image)
-    
-    return preprocessed_image;
+    return preprocessed_image
 
 
 def scale_image(image: np.ndarray) -> np.ndarray:
@@ -35,14 +35,14 @@ def enhance_image(image: np.ndarray) -> np.ndarray:
 
 
 def morph_image(image: np.ndarray) -> np.ndarray:
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
     morphed_image = cv2.morphologyEx(src=image, op=cv2.MORPH_OPEN, kernel=kernel)
     
     return morphed_image
 
 
 def segment_image(image: np.ndarray) -> np.ndarray:
-    _, segmented_image = cv2.threshold(image, 55, 255, cv2.THRESH_BINARY)
+    _, segmented_image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     
     return segmented_image
 
@@ -63,10 +63,15 @@ def detect_image_scale(image: np.ndarray) -> tuple[int, int]:
     # Marker is the size of a 6x6 lego brick, thus each 1x1 lego brick, in pixels will be:
     width_scale = marker_width_px / 60
     height_scale = marker_height_px / 60
+    
+    marker_corners = np.array(marker_corners, dtype=np.int32)
+    
+    cv2.fillPoly(image, marker_corners, (255, 255, 255))
 
     return width_scale, height_scale
 
 
 def read_image(image_path: str) -> np.ndarray:
     image = cv2.imread(image_path)
+    
     return image.copy()

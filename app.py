@@ -7,7 +7,7 @@ import joblib
 
 # My modules
 from training.svm_training import Trainer
-from shared.debugging import Debug
+from debugging import Debug
 from svm.humoments_classifier import ShapeClassifier
 
 
@@ -66,7 +66,7 @@ def main(args: dict[str, any]):
             print('Unknown method parameter')
             return
         
-    classifier = ShapeClassifier(model_path=classifier_path, pca_path=pca_path)
+    classifier = ShapeClassifier(model_path=f'{model_dir}clf.joblib', pca_path=pca_path)
     classifier.classifyShapes(image_path)
         
     classifier.showPredictions()
