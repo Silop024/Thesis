@@ -13,7 +13,7 @@ def preprocess_image(image: np.ndarray) -> np.ndarray:
     
     preprocessed_image = segment_image(preprocessed_image)
     
-    return preprocessed_image;
+    return preprocessed_image
 
 
 def scale_image(image: np.ndarray) -> np.ndarray:

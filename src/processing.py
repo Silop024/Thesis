@@ -22,7 +22,7 @@ def fix_labels(Y: np.array) -> np.array:
 
 
 def create_pca(X: np.ndarray, n_components: int) -> PCA:
-    pca = PCA(n_components=n_components)
+    pca = PCA(n_components=n_components, random_state=0)
     
     pca.fit(X)
     
