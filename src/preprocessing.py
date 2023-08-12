@@ -7,11 +7,27 @@ from cv2 import aruco
 def preprocess_image(image: np.ndarray) -> np.ndarray:
     preprocessed_image = enhance_image(image)
     
-    preprocessed_image = morph_image(preprocessed_image)
+    """cv2.imshow("", preprocessed_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()"""
     
     preprocessed_image = scale_image(preprocessed_image)
     
+    """cv2.imshow("", preprocessed_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()"""
+    
+    preprocessed_image = morph_image(preprocessed_image)
+    
+    """cv2.imshow("", preprocessed_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()"""
+    
     preprocessed_image = segment_image(preprocessed_image)
+    
+    """cv2.imshow("", preprocessed_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()"""
     
     return preprocessed_image
 
@@ -19,9 +35,10 @@ def preprocess_image(image: np.ndarray) -> np.ndarray:
 def scale_image(image: np.ndarray) -> np.ndarray:
     width_scale, height_scale = detect_image_scale(image)
     
-    new_dim = (int(image.shape[0] / width_scale), int(image.shape[1] / height_scale))
+    new_dim = (int(image.shape[1] / width_scale), int(image.shape[0] / height_scale))
 
     resized_image = cv2.resize(src=image, dsize=new_dim)
+    #resized_image = cv2.resize(src=image, dsize=None, fx=width_scale, fy=height_scale)
     
     return resized_image
 
@@ -42,7 +59,7 @@ def morph_image(image: np.ndarray) -> np.ndarray:
 
 
 def segment_image(image: np.ndarray) -> np.ndarray:
-    _, segmented_image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    _, segmented_image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     
     return segmented_image
 
@@ -61,7 +78,7 @@ def detect_image_scale(image: np.ndarray) -> tuple[int, int]:
     marker_height_px = np.linalg.norm(marker_corners[0][0][0] - marker_corners[0][0][3])
     
     # Marker is the size of a 6x6 lego brick, thus each 1x1 lego brick, in pixels will be:
-    width_scale = marker_width_px / 60
+    width_scale =  marker_width_px / 60
     height_scale = marker_height_px / 60
     
     marker_corners = np.array(marker_corners, dtype=np.int32)
