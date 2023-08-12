@@ -49,8 +49,8 @@ def contour_to_roi(contour: np.array) -> np.ndarray:
     x, y, w, h = cv2.boundingRect(contour)
     
     # Define maximum dimensions of the ROI
-    height = 200
-    width = 200
+    height = 60
+    width = 60
     
     # Create a blank image (padded_roi) of the maximum dimensions
     padded_roi = np.zeros((height, width), dtype=np.uint8)
@@ -183,12 +183,6 @@ def extract_all_features(image_tuple: Tuple[str, np.ndarray], feature_type: Feat
     
     contours = get_contours(image)
     
-    backtorgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-    cv2.drawContours(backtorgb, contours, -1, (0, 255, 0), 2)
-    cv2.imshow(label, backtorgb)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    
     for contour in contours:
         roi = contour_to_roi(contour)
         
@@ -203,10 +197,6 @@ def extract_all_features(image_tuple: Tuple[str, np.ndarray], feature_type: Feat
         
         X.append(features)
         Y.append(label)
-        
-    """cv2.imshow(label, roi)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()"""
     
     return X, Y
 
