@@ -49,8 +49,8 @@ def contour_to_roi(contour: np.array) -> np.ndarray:
     x, y, w, h = cv2.boundingRect(contour)
     
     # Define maximum dimensions of the ROI
-    height = 100
-    width = 100
+    height = 60
+    width = 60
     
     # Create a blank image (padded_roi) of the maximum dimensions
     padded_roi = np.zeros((height, width), dtype=np.uint8)
@@ -72,12 +72,8 @@ def contour_to_roi(contour: np.array) -> np.ndarray:
 
 def get_contours(image: np.ndarray) -> List[np.array]:
     # Get all contours in binary image
-    contours, _ = cv2.findContours(image, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    
-    # Remove contour that appears around the entire image for some unknown reason
-    max_contour_area = 0.5 * image.shape[0] * image.shape[1]
-    contours = [cnt for cnt in contours if cv2.contourArea(cnt) < max_contour_area]
-    
+    contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
     contours = sort_contours(contours)
     
     return contours
