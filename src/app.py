@@ -41,6 +41,8 @@ def main(args: dict[str, any]):
     # Parse shapes into code
     code = parsing.parse(predictions, correct_code)
     
+    print(f'Parsed code: {code}')
+    
     # Interpret code
     output = bfi.interpret(program=code, input_data=input, buffer_output=True, time_limit=5)
     

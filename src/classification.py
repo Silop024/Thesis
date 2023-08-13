@@ -1,18 +1,17 @@
 # My own files
-from feature_extraction import extract_all_features, get_contours, show_features
-from features import FeatureType
+import parsing
 import processing
 import preprocessing
-import parsing
+from features import FeatureType
+import feature_extraction as extraction
 
 # Python standard libraries
 import os
 import configparser
 
 # Installed with pip
-import cv2
+import bfi
 import joblib
-import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.base import BaseEstimator
 
@@ -22,7 +21,7 @@ def classify(image_path: str, clf: BaseEstimator, pca: PCA, debug=False):
     
     preprocessed_image = preprocessing.preprocess_image(image)
     
-    X, Y = extract_all_features(("N/A", preprocessed_image), FeatureType.HOG)
+    X, _ = extraction.extract_all_features(("N/A", preprocessed_image), FeatureType.HOG)
     
     # Process data
     X = processing.scale_data(X)
@@ -32,10 +31,9 @@ def classify(image_path: str, clf: BaseEstimator, pca: PCA, debug=False):
     predictions = clf.predict(X)
     
     if debug:
-        show_features(X, predictions, pca)
+        extraction.show_features(X, predictions, pca)
     
     return predictions
-    
 
 
 if __name__ == '__main__':
@@ -43,16 +41,15 @@ if __name__ == '__main__':
     config = configparser.ConfigParser()
     config.read('config.ini') 
     model_dir = config['Paths']['model_dir']
+    models = config['Models']
     test_dir = config['Paths']['test_dir']
     
     image_path = os.path.join(test_dir, "HelloWorld.jpg")
-
-    clf_path = os.path.join(model_dir, "clf.joblib")
     
-    clf = joblib.load(os.path.join(model_dir, "clf.joblib"))
-    pca = joblib.load(os.path.join(model_dir, "pca.joblib"))
+    clf = joblib.load(os.path.join(model_dir, models['clf']))
+    pca = joblib.load(os.path.join(model_dir, models['pca']))
     
-    predictions = classify(image_path, clf, pca, False)
+    predictions = classify(image_path, clf, pca, True)
     
     hello_world = '++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.'
     
@@ -60,5 +57,5 @@ if __name__ == '__main__':
     
     print(code)
     
-    parsing.parse(predictions, )
+    bfi.interpret(program=code, time_limit=5)
     

@@ -42,9 +42,10 @@ def train(images: List[Tuple[str, np.ndarray]]):
     # Save the classifier and pca, the same pca needs to be used with the same classifier
     # for every classification task. Otherwise it will most likely produce an error.
     model_dir = config['Paths']['model_dir']
+    models = config['Models']
     
-    joblib.dump(pca, os.path.join(model_dir, 'pca.joblib'))
-    joblib.dump(clf, os.path.join(model_dir, 'clf.joblib'))
+    joblib.dump(pca, os.path.join(model_dir, models['pca']))
+    joblib.dump(clf, os.path.join(model_dir, models['clf']))
     
     
 if __name__ == '__main__':
