@@ -9,15 +9,15 @@ def preprocess_image(image: np.ndarray) -> np.ndarray:
     
     preprocessed_image = scale_image(preprocessed_image)
     
-    """cv2.imshow("", preprocessed_image)
+    cv2.imshow("", preprocessed_image)
     cv2.waitKey(0)
-    cv2.destroyAllWindows()"""
+    cv2.destroyAllWindows()
     
     preprocessed_image = enhance_image(preprocessed_image)
     
-    """cv2.imshow("", preprocessed_image)
+    cv2.imshow("", preprocessed_image)
     cv2.waitKey(0)
-    cv2.destroyAllWindows()"""
+    cv2.destroyAllWindows()
     
     preprocessed_image = morph_image(preprocessed_image)
     
@@ -70,7 +70,7 @@ def detect_image_scale(image: np.ndarray) -> tuple[int, int]:
     marker_corners, _, _ = detector.detectMarkers(image)
     
     if len(marker_corners) == 0:
-        return 1, 1
+        exit("Failed to detect Aruco")
     
     marker_width_px = np.linalg.norm(marker_corners[0][0][0] - marker_corners[0][0][1])
     marker_height_px = np.linalg.norm(marker_corners[0][0][0] - marker_corners[0][0][3])

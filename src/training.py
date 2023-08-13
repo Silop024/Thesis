@@ -33,7 +33,7 @@ def train(images: List[Tuple[str, np.ndarray]]):
     pca = processing.create_pca(X, n_components=10) # Fit a principal component analyser (pca)
     X = processing.use_pca(X, pca) # Use the pca to transform the data to the desire dimensionality.
     
-    #extraction.show_features(X, Y, pca)
+    extraction.show_features(X, Y, pca)
     
     # Train classifier
     clf = svm.SVC(random_state=0, C=5)

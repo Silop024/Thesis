@@ -183,6 +183,12 @@ def extract_all_features(image_tuple: Tuple[str, np.ndarray], feature_type: Feat
     
     contours = get_contours(image)
     
+    backtorgb = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    cv2.drawContours(backtorgb, contours, -1, (0, 255, 0), 2)
+    cv2.imshow("", backtorgb)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    
     for contour in contours:
         roi = contour_to_roi(contour)
         

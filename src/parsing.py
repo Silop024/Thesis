@@ -2,7 +2,7 @@
 import configparser
 from typing import List
 
-def parse(predictions: List[str], actual: str | None = None) -> str:
+def parse(predictions: List[str], expected: str | None = None) -> str:
     config = configparser.ConfigParser()
     config.read('config.ini')
     shape_mapping_dict = config['Shapes']
@@ -12,8 +12,8 @@ def parse(predictions: List[str], actual: str | None = None) -> str:
     
     code = ''.join(symbols)
     
-    if actual is not None:
+    if expected is not None:
         print(f'Result: {code}')
-        print(f'Actual: {actual}')
+        print(f'Expected: {expected}')
     
     return code
