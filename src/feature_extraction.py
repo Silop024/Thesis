@@ -36,6 +36,54 @@ def get_sift(roi: np.ndarray) -> np.ndarray:
     _, descriptors = sift.detectAndCompute(roi, None)
     
     return descriptors
+
+
+def create_codebook(images: List[Tuple[str, np.ndarray]], size=100) -> Tuple[np.ndarray, np.ndarray]:
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 0.01)
+    flags = cv2.KMEANS_RANDOM_CENTERS
+    
+    descriptors = []
+    for _, image in images:
+        rois = get_regions_of_interest(image)
+        
+        for roi in rois:
+            des = get_sift(roi)
+        
+            if des is not None:
+                descriptors.extend(des)
+        
+    
+    X = np.vstack(descriptors)
+    
+    _, labels, _ = cv2.kmeans(X, size, None, criteria, 10, flags)
+    
+    codebook = np.zeros((size, X.shape[1]))
+    
+    for i in range(size):
+        codebook[i] = np.mean(X[labels.ravel() == i], axis=0)
+        
+    return codebook, descriptors
+
+        
+def extract_all_sift(image_tuple: Tuple[str, np.ndarray], codebook, descriptors) -> Tuple[np.array, np.array]:
+    label, _ = image_tuple
+    
+    X = []  # features
+    Y = []  # labels
+    
+    for des in descriptors:
+        histogram = np.zeros(codebook.shape[0])
+        
+        dists = np.linalg.norm(codebook - des, axis=1)
+        
+        min_idx = np.argmin(dists)
+        
+        histogram[min_idx] += 1
+        
+        X.append(histogram)
+        Y.append(label)
+    
+    return X, Y
     
     
 def get_hog(roi: np.ndarray) -> np.ndarray:
@@ -123,54 +171,6 @@ def get_regions_of_interest(image: np.ndarray) -> List[np.ndarray]:
         
     return rois
         
-        
-def create_codebook(images: List[Tuple[str, np.ndarray]], size=100) -> Tuple[np.ndarray, np.ndarray]:
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 0.01)
-    flags = cv2.KMEANS_RANDOM_CENTERS
-    
-    descriptors = []
-    for _, image in images:
-        rois = get_regions_of_interest(image)
-        
-        for roi in rois:
-            des = get_sift(roi)
-        
-            if des is not None:
-                descriptors.extend(des)
-        
-    
-    X = np.vstack(descriptors)
-    
-    _, labels, _ = cv2.kmeans(X, size, None, criteria, 10, flags)
-    
-    codebook = np.zeros((size, X.shape[1]))
-    
-    for i in range(size):
-        codebook[i] = np.mean(X[labels.ravel() == i], axis=0)
-        
-    return codebook, descriptors
-
-        
-def extract_all_sift(image_tuple: Tuple[str, np.ndarray], codebook, descriptors) -> Tuple[np.array, np.array]:
-    label, image = image_tuple
-    
-    X = []  # features
-    Y = []  # labels
-    
-    for des in descriptors:
-        histogram = np.zeros(codebook.shape[0])
-        
-        dists = np.linalg.norm(codebook - des, axis=1)
-        
-        min_idx = np.argmin(dists)
-        
-        histogram[min_idx] += 1
-        
-        X.append(histogram)
-        Y.append(label)
-    
-    return X, Y
-        
 
 def extract_all_features(image_tuple: Tuple[str, np.ndarray], feature_type: FeatureType) -> Tuple[np.array, np.array]:
     if feature_type is FeatureType.SIFT:
@@ -182,12 +182,6 @@ def extract_all_features(image_tuple: Tuple[str, np.ndarray], feature_type: Feat
     Y = []  # labels
     
     contours = get_contours(image)
-    
-    backtorgb = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    cv2.drawContours(backtorgb, contours, -1, (0, 255, 0), 2)
-    cv2.imshow("", backtorgb)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
     
     for contour in contours:
         roi = contour_to_roi(contour)
