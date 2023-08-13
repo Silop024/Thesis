@@ -9,15 +9,7 @@ def preprocess_image(image: np.ndarray) -> np.ndarray:
     
     preprocessed_image = scale_image(preprocessed_image)
     
-    cv2.imshow("", preprocessed_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    
     preprocessed_image = enhance_image(preprocessed_image)
-    
-    cv2.imshow("", preprocessed_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
     
     preprocessed_image = morph_image(preprocessed_image)
     
@@ -57,7 +49,6 @@ def scale_image(image: np.ndarray) -> np.ndarray:
     new_dim = (int(image.shape[1] / width_scale), int(image.shape[0] / height_scale))
 
     resized_image = cv2.resize(src=image, dsize=new_dim, interpolation=cv2.INTER_CUBIC)
-    #resized_image = cv2.resize(src=image, dsize=None, fx=width_scale, fy=height_scale)
     
     return resized_image
 
