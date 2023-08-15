@@ -21,6 +21,7 @@ def preprocess_image(image: np.ndarray) -> np.ndarray:
 def grayscale_image(image: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+
 def enhance_image(image: np.ndarray) -> np.ndarray:
     enhanced_image = cv2.GaussianBlur(image, ksize=(3, 3), sigmaX=0)
     
@@ -54,19 +55,23 @@ def scale_image(image: np.ndarray) -> np.ndarray:
 
 
 def detect_image_scale(image: np.ndarray) -> tuple[int, int]:
+    # Detect ArUco marker
     dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_250)
     params =  aruco.DetectorParameters()
     detector = aruco.ArucoDetector(dict, params)
-    
     marker_corners, _, _ = detector.detectMarkers(image)
     
     if len(marker_corners) == 0:
+        cv2.imshow("", image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
         exit("Failed to detect Aruco")
     
+    # Get marker width and height
     marker_width_px = np.linalg.norm(marker_corners[0][0][0] - marker_corners[0][0][1])
     marker_height_px = np.linalg.norm(marker_corners[0][0][0] - marker_corners[0][0][3])
     
-    # Marker is the size of a 6x6 lego brick, thus each 1x1 lego brick, in pixels will be:
+    # Set desired scale
     width_scale =  marker_width_px / 60
     height_scale = marker_height_px / 60
     
@@ -86,9 +91,10 @@ def detect_image_scale(image: np.ndarray) -> tuple[int, int]:
     top_left = np.maximum(top_left, 0)
     bottom_right = np.minimum(bottom_right, (image.shape[1], image.shape[0]))
 
-    # Create and fill the slightly bigger white square
+    # Create and fill the slightly bigger white square to hide the marker
     cv2.rectangle(image, tuple(top_left), tuple(bottom_right), (255, 255, 255), thickness=-1)
 
+    # Return the desired scale
     return width_scale, height_scale
 
 
