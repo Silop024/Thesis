@@ -29,5 +29,5 @@ def create_pca(X: np.ndarray, n_components: int) -> PCA:
     return pca
 
 
-def use_pca(X:np.ndarray, pca: PCA) -> np.ndarray:
+def use_pca(X: np.ndarray, pca: PCA) -> np.ndarray:
     return pca.transform(X)
