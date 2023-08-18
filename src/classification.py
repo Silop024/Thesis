@@ -14,9 +14,12 @@ import bfi
 import joblib
 from sklearn.decomposition import PCA
 from sklearn.base import BaseEstimator
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 
-def classify(image_path: str, clf: BaseEstimator, pca: PCA, debug=False):
+def classify(image_path: str, clf: BaseEstimator, pca: PCA, 
+             scaler: StandardScaler, encoder: LabelEncoder, 
+             debug=False):
     image = preprocessing.read_image(image_path)
     
     preprocessed_image = preprocessing.preprocess_image(image)
@@ -24,7 +27,7 @@ def classify(image_path: str, clf: BaseEstimator, pca: PCA, debug=False):
     X, _ = extraction.extract_all_features(("N/A", preprocessed_image), FeatureType.HOG)
     
     # Process data
-    X = processing.scale_data(X)
+    X = processing.scale_data(X, scaler)
     X = processing.use_pca(X, pca)
     
     # Classify, returns a list of labels
