@@ -1,6 +1,8 @@
 # My own files
 import parsing
+import preprocessing
 import classification
+import feature_extraction
 
 # Python standard libraries
 import os
@@ -10,6 +12,7 @@ import configparser
 
 # Installed with pip
 import bfi
+import cv2
 import joblib
 
 
@@ -25,6 +28,10 @@ def main(args: dict[str, any]):
     clf = joblib.load(os.path.join(model_dir, models['clf']))
     pca = joblib.load(os.path.join(model_dir, models['pca']))
     
+    # Load scaler and encoder
+    scaler = joblib.load(os.path.join(model_dir, models['scaler']))
+    encoder = joblib.load(os.path.join(model_dir, models['encoder']))
+    
     # Read args
     image_path = args['image']
     correct_code = args['correctcode']
@@ -36,21 +43,35 @@ def main(args: dict[str, any]):
         image_path = os.path.join(test_dir, image_path)
         
     # Classify shapes
-    predictions = classification.classify(image_path=image_path, clf=clf, pca=pca, debug=is_verbose)
+    predictions = classification.classify(
+        image_path=image_path, clf=clf, pca=pca, 
+        scaler=scaler, encoder=encoder, debug=is_verbose)
     
     # Parse shapes into code
-    code = parsing.parse(predictions, correct_code)
+    code, wrong = parsing.parse(predictions, correct_code)
     
     print(f'Parsed code: {code}')
     
+    if len(wrong) != 0:
+        image = preprocessing.read_image(image_path)
+        image = preprocessing.preprocess_image(image)
+        contours = feature_extraction.get_contours(image)
+        debug_image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        
+        for i, _, parsed in wrong:
+            cv2.drawContours(debug_image, contours, i, (0, 0, 255), 1)
+            x, y, w, h = cv2.boundingRect(contours[i])
+            cv2.putText(debug_image, parsed, (x + w // 2, y + h), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 2)
+    
+        cv2.imshow("", debug_image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+    
     # Interpret code
-    output = bfi.interpret(program=code, input_data=input, buffer_output=True, time_limit=5)
+    bfi.interpret(program=code, input_data=input)
     
     if correct_output is not None:
         print(f'Expected output: {correct_output}')
-        
-    if output is not None:
-        print(f'Output: {output}')
     
 
 
