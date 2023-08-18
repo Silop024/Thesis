@@ -27,9 +27,13 @@ def train(images: List[Tuple[str, np.ndarray]]):
         Y.extend(y)
         
     # Process data before training
-    X = processing.scale_data(X)
-    Y = processing.fix_labels(Y)
+    scaler = processing.create_scaler(X)
+    X = processing.scale_data(X, scaler)
     
+    encoder = processing.create_encoder(Y)
+    Y = processing.fix_labels(Y, encoder)
+    
+    # Principal component analysis
     pca = processing.create_pca(X, n_components=10) # Fit a principal component analyser (pca)
     X = processing.use_pca(X, pca) # Use the pca to transform the data to the desire dimensionality.
     
@@ -46,6 +50,8 @@ def train(images: List[Tuple[str, np.ndarray]]):
     
     joblib.dump(pca, os.path.join(model_dir, models['pca']))
     joblib.dump(clf, os.path.join(model_dir, models['clf']))
+    joblib.dump(scaler, os.path.join(model_dir, models['scaler']))
+    joblib.dump(encoder, os.path.join(model_dir, models['encoder']))
     
     
 if __name__ == '__main__':
