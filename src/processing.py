@@ -1,21 +1,36 @@
 # Installed with pip
 import numpy as np
-import sklearn.preprocessing
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 
-def scale_data(X: np.ndarray) -> np.ndarray:
-    scaler = sklearn.preprocessing.StandardScaler()
+def create_scaler(X: np.ndarray) -> StandardScaler:
+    scaler = StandardScaler()
+    
     X_np = np.array(X)
-    X_scaled = scaler.fit_transform(X_np)
+    
+    return scaler.fit(X_np)
+
+
+def scale_data(X: np.ndarray, scaler: StandardScaler) -> np.ndarray:
+    X_np = np.array(X)
+    X_scaled = scaler.transform(X_np)
     
     return X_scaled
 
 
-def fix_labels(Y: np.array) -> np.array:
-    encoder = sklearn.preprocessing.LabelEncoder()
+def create_encoder(Y: np.array) -> LabelEncoder:
+    encoder = LabelEncoder()
+    
     Y_np = np.array(Y)
-    Y_encoded = encoder.fit_transform(Y_np)
+    
+    return encoder.fit(Y_np)
+
+
+def fix_labels(Y: np.array, encoder: LabelEncoder) -> np.array:
+    Y_np = np.array(Y)
+    
+    Y_encoded = encoder.transform(Y_np)
     Y_decoded = encoder.inverse_transform(Y_encoded)
     
     return Y_decoded
