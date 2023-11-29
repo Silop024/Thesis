@@ -50,6 +50,9 @@ def main(args: dict[str, any]):
     # Parse shapes into code
     code, wrong = parsing.parse(predictions, correct_code)
     
+    print("Predictions")
+    print(predictions)
+    
     print(f'Parsed code: {code}')
     
     if len(wrong) != 0:
@@ -63,7 +66,7 @@ def main(args: dict[str, any]):
             x, y, w, h = cv2.boundingRect(contours[i])
             cv2.putText(debug_image, parsed, (x + w // 2, y + h), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 2)
     
-        cv2.imshow("", debug_image)
+        cv2.imshow("Parsed", debug_image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
     
